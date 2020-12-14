@@ -1,0 +1,10 @@
+.DS_Store
+.idea
+.idea/*
+.vscode/*
+
+*.pyc
+
+wandb
+
+*.zip
