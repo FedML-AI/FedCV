@@ -69,6 +69,6 @@ cd FedML
 git checkout master && git pull
 cd ..
 git add FedML
-git commit -m "updating submodule FedML to latest"
+git commit -m "#<issue_id> - updating submodule FedML to latest"
 git push
 ```
