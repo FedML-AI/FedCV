@@ -108,7 +108,7 @@ def partition_data(data_dir, partition, n_nets, alpha):
         # This is useful if we allow custom category lists, currently done for consistency
         categories = [train_categories.index(c) for c in train_categories]
         net_data_idx_map = non_iid_partition_with_dirichlet_distribution(train_targets, n_nets, categories, alpha,
-                                                                        task='segmentation')
+                                                                         task='segmentation')
 
     train_data_cls_counts = record_data_stats(train_targets, net_data_idx_map, task='segmentation')
 

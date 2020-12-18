@@ -161,7 +161,8 @@ def load_partition_data_coco_segmentation(dataset, data_dir, partition_method, p
         local_data_num = len(data_idxs)
         data_local_num_dict[client_idx] = local_data_num
 
-        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, data_idxs)
+        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
+                                                                      data_idxs)
 
         # Store data loaders for each client as they contain specific data
         train_data_local_dict[client_idx] = train_data_local
