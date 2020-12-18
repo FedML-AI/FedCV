@@ -8,7 +8,13 @@ from torch.utils.data import Dataset
 
 
 class PascalVocAugmentedSegmentation(Dataset):
-    def __init__(self, root_dir='../../../data/pascal_voc_augmented', split='train', transform=None, data_idxs=None):
+    def __init__(self,
+                 root_dir='../../../data/pascal_voc_augmented',
+                 split='train',
+                 download_dataset=False,
+                 transform=None,
+                 data_idxs=None):
+
         self.images_dir = Path('{}/dataset/img'.format(root_dir))
         self.masks_dir = Path('{}/dataset/cls'.format(root_dir))
         self.split_file = Path('{}/dataset/{}.txt'.format(root_dir, split))

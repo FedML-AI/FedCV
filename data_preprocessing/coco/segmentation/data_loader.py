@@ -6,7 +6,8 @@ import numpy as np
 from torchvision import transforms
 from data_preprocessing.coco.segmentation.transforms import Normalize, ToTensor, FixedResize
 from data_preprocessing.coco.segmentation.datasets import CocoSegmentation
-from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats
+from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
+    partition_class_samples_with_dirichlet_distribution
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -125,14 +126,8 @@ def partition_data(datadir, partition, n_nets, alpha):
                         [np.any(train_targets[i] == cat) for i in range(len(train_targets))])
 
                 idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
-                np.random.shuffle(idx_k)
-                proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
-                proportions = np.array([p * (len(idx_j) < N / n_nets) for p, idx_j in zip(proportions, idx_batch)])
-
-                proportions = proportions / proportions.sum()
-                proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
-                idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
-                min_size = min([len(idx_j) for idx_j in idx_batch])
+                idx_batch, min_size = partition_class_samples_with_dirichlet_distribution(N, alpha, n_nets, idx_batch,
+                                                                                          idx_k)
 
         for j in range(n_nets):
             np.random.shuffle(idx_batch[j])

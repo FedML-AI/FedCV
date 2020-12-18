@@ -6,7 +6,8 @@ import numpy as np
 from torchvision import transforms
 import data_preprocessing.pascal_voc_augmented.transforms as custom_transforms
 from data_preprocessing.pascal_voc_augmented.datasets import PascalVocAugmentedSegmentation
-from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats
+from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
+    partition_class_samples_with_dirichlet_distribution
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -49,11 +50,13 @@ def get_dataloader_pascal_voc(datadir, train_bs, test_bs, dataidxs=None):
 
     train_ds = PascalVocAugmentedSegmentation(datadir,
                                               split='train',
+                                              download_dataset=False,
                                               transform=transform_train,
                                               data_idxs=dataidxs)
 
     test_ds = PascalVocAugmentedSegmentation(datadir,
                                              split='val',
+                                             download_dataset=False,
                                              transform=transform_test)
 
     train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True)
@@ -67,11 +70,13 @@ def get_dataloader_pascal_voc_test(datadir, train_bs, test_bs, dataidxs_train=No
 
     train_ds = PascalVocAugmentedSegmentation(datadir,
                                               split='train',
+                                              download_dataset=False,
                                               transform=transform_train,
                                               data_idxs=dataidxs_train)
 
     test_ds = PascalVocAugmentedSegmentation(datadir,
                                              split='val',
+                                             download_dataset=False,
                                              transform=transform_test,
                                              data_idxs=dataidxs_test)
 
@@ -84,8 +89,8 @@ def get_dataloader_pascal_voc_test(datadir, train_bs, test_bs, dataidxs_train=No
 def load_pascal_voc_data(datadir):
     transform_train, transform_test = _data_transforms_pascal_voc()
 
-    train_ds = PascalVocAugmentedSegmentation(datadir, split='train', transform=transform_train)
-    test_ds = PascalVocAugmentedSegmentation(datadir, split='val', transform=transform_test)
+    train_ds = PascalVocAugmentedSegmentation(datadir, split='train', download_dataset=False, transform=transform_train)
+    test_ds = PascalVocAugmentedSegmentation(datadir, split='val', download_dataset=False, transform=transform_test)
 
     return train_ds.images, train_ds.targets, train_ds.classes, test_ds.images, test_ds.targets, test_ds.classes
 
@@ -117,7 +122,7 @@ def partition_data(datadir, partition, n_nets, alpha):
             idx_batch = [[] for _1 in range(n_nets)]
 
             # note: one image may have multiple categories
-            for c in range(len(categories)):
+            for c, cat in range(len(categories)):
                 if c > 0:
                     idx_k = np.asarray([np.any(train_targets[i] == c) and not np.any(
                         train_targets[i][train_targets[i] < c]) for i in
@@ -127,31 +132,8 @@ def partition_data(datadir, partition, n_nets, alpha):
                         [np.any(train_targets[i] == c) for i in range(len(train_targets))])
 
                 idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
-                np.random.shuffle(idx_k)
-
-                # alpha, parameter for Dirichlet dist, vector containing positive concentration parameters (larger
-                # the value more even the distribution)
-                proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
-                proportions = np.array([p * (len(idx_j) < N / n_nets) for p, idx_j in zip(proportions, idx_batch)])
-
-                # Normalize across all samples
-                proportions = proportions / proportions.sum()
-                proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
-
-                # Split sample indices based on proportions
-                # eg. np.split(np.asarray([1,2,3,4,5,6,7,8,9,0,12,14,15,16,13]), [0,0,2,2,2,2,14,14,14])
-                # -> [array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([1, 2]),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([ 3,  4,  5,  6,  7,  8,  9,  0, 12, 14, 15, 16]),
-                #  array([], dtype=int64),
-                #  array([], dtype=int64),
-                #  array([13])]
-                idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
-                min_size = min([len(idx_j) for idx_j in idx_batch])
+                idx_batch, min_size = partition_class_samples_with_dirichlet_distribution(N, alpha, n_nets, idx_batch,
+                                                                                          idx_k)
 
         for j in range(n_nets):
             np.random.shuffle(idx_batch[j])
