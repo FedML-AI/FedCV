@@ -7,7 +7,7 @@ from torchvision import transforms
 from data_preprocessing.coco.segmentation.transforms import Normalize, ToTensor, FixedResize
 from data_preprocessing.coco.segmentation.datasets import CocoSegmentation
 from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
-    partition_class_samples_with_dirichlet_distribution, non_iid_partition_with_dirichlet_distribution
+    non_iid_partition_with_dirichlet_distribution
 
 logging.basicConfig()
 logger = logging.getLogger()
