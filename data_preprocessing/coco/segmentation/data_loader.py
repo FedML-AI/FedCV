@@ -72,7 +72,7 @@ def get_dataloader_coco_segmentation_test(data_dir, train_bs, test_bs, data_idxs
     return train_dl, test_dl, train_ds.num_classes
 
 
-def load_coco_data(data_dir):
+def load_coco_segmentation_data(data_dir):
     transform_train, transform_test = _data_transforms_coco_segmentation()
 
     train_ds = CocoSegmentation(data_dir, split='train', transform=transform_train, download_dataset=False)
@@ -85,7 +85,7 @@ def load_coco_data(data_dir):
 def partition_data(data_dir, partition, n_nets, alpha):
     net_data_idx_map = None
     idx_batch = None
-    train_images, train_targets, train_cat_ids, _, __, ___ = load_coco_data(data_dir)
+    train_images, train_targets, train_cat_ids, _, __, ___ = load_coco_segmentation_data(data_dir)
     n_train = len(train_images)  # Number of training samples
 
     if partition == "homo":
@@ -188,7 +188,7 @@ def load_partition_data_coco_segmentation(dataset, data_dir, partition_method, p
         train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
                                                                       data_idxs)
 
-        # Store dataloaders for each client as they contain specific data
+        # Store data loaders for each client as they contain specific data
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
     return train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict, \
