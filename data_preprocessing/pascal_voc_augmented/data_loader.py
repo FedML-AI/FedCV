@@ -7,7 +7,7 @@ from torchvision import transforms
 import data_preprocessing.pascal_voc_augmented.transforms as custom_transforms
 from data_preprocessing.pascal_voc_augmented.datasets import PascalVocAugmentedSegmentation
 from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
-    partition_class_samples_with_dirichlet_distribution
+    non_iid_partition_with_dirichlet_distribution
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -97,7 +97,6 @@ def load_pascal_voc_data(datadir):
 
 # Get a partition map for each client
 def partition_data(datadir, partition, n_nets, alpha):
-    traindata_cls_counts = None
     net_dataidx_map = None
     logging.info("********* partition data PASCAL VOC ***************")
     train_images, train_targets, train_categories, _, __, ___ = load_pascal_voc_data(datadir)
@@ -112,34 +111,13 @@ def partition_data(datadir, partition, n_nets, alpha):
     # non-iid data distribution
     # TODO: Add custom non-iid distribution option - hetero-fix
     elif partition == "hetero":
-        min_size = 0
-        categories = train_categories
-        N = n_train  # Number of labels/training samples
-        net_dataidx_map = {}
 
-        while min_size < 10:
-            # Create a list of empty lists for clients
-            idx_batch = [[] for _1 in range(n_nets)]
+        # This is useful if we allow custom category lists, currently done for consistency
+        categories = [train_categories.index(c) for c in train_categories]
+        net_dataidx_map = non_iid_partition_with_dirichlet_distribution(train_targets, n_nets, categories, alpha,
+                                                                        task='segmentation')
 
-            # note: one image may have multiple categories
-            for c, cat in range(len(categories)):
-                if c > 0:
-                    idx_k = np.asarray([np.any(train_targets[i] == c) and not np.any(
-                        train_targets[i][train_targets[i] < c]) for i in
-                                        range(len(train_targets))])
-                else:
-                    idx_k = np.asarray(
-                        [np.any(train_targets[i] == c) for i in range(len(train_targets))])
-
-                idx_k = np.where(idx_k)[0]  # Get the indices of images that have category = c
-                idx_batch, min_size = partition_class_samples_with_dirichlet_distribution(N, alpha, n_nets, idx_batch,
-                                                                                          idx_k)
-
-        for j in range(n_nets):
-            np.random.shuffle(idx_batch[j])
-            net_dataidx_map[j] = idx_batch[j]
-
-    traindata_cls_counts = record_data_stats(train_targets, net_dataidx_map, is_segmentation=True)
+    traindata_cls_counts = record_data_stats(train_targets, net_dataidx_map, task='segmentation')
 
     return net_dataidx_map, traindata_cls_counts
 
