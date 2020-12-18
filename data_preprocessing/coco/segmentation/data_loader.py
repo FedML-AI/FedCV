@@ -4,7 +4,7 @@ from torchvision import transforms
 
 from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
     non_iid_partition_with_dirichlet_distribution
-from .datasets import CocoSegmentation
+from .dataset import CocoSegmentation
 from .transforms import Normalize, ToTensor, FixedResize
 
 
@@ -97,10 +97,10 @@ def partition_data(data_dir, partition, n_nets, alpha):
     # TODO: Add custom non-iid distribution option - hetero-fix
     elif partition == "hetero":
         categories = train_cat_ids  # category names
-        net_dataidx_map = non_iid_partition_with_dirichlet_distribution(train_targets, n_nets, categories, alpha,
+        net_data_idx_map = non_iid_partition_with_dirichlet_distribution(train_targets, n_nets, categories, alpha,
                                                                         task='segmentation')
 
-    train_data_cls_counts = record_data_stats(train_targets, net_dataidx_map, task='segmentation')
+    train_data_cls_counts = record_data_stats(train_targets, net_data_idx_map, task='segmentation')
 
     return net_data_idx_map, train_data_cls_counts
 
