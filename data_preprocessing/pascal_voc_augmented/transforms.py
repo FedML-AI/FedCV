@@ -1,4 +1,5 @@
 import random
+from typing import Dict, Iterable, Callable
 
 import numpy as np
 import torch
@@ -7,7 +8,10 @@ from torchvision import transforms
 
 
 class RandomMirror(object):
-    def __call__(self, sample):
+    """
+    Randomly perform a lateral inversion on the image.
+    """
+    def __call__(self, sample: Dict[str, Image]) -> Dict[str, Image]:
         img = sample['image']
         mask = sample['label']
         if random.random() < 0.5:
@@ -20,11 +24,21 @@ class RandomMirror(object):
 
 
 class RandomScaleCrop(object):
-    def __init__(self, base_size=512, crop_size=512):
+    base_size: int
+    crop_size: int
+
+    def __init__(self, base_size: int = 512, crop_size: int = 512):
+        """
+        Randomly scales and crops the image.
+
+        Args:
+            base_size: The base size to scale
+            crop_size: The size to crop
+        """
         self.base_size = base_size
         self.crop_size = crop_size
 
-    def __call__(self, sample):
+    def __call__(self, sample: Dict[str, Image]) -> Dict[str, Image]:
         img = sample['image']
         mask = sample['label']
         short_size = random.randint(int(self.base_size * 0.5), int(self.base_size * 2.0))
@@ -54,7 +68,10 @@ class RandomScaleCrop(object):
 
 
 class RandomGaussianBlur(object):
-    def __call__(self, sample):
+    """
+    Randomly apply a gaussian blur to the image.
+    """
+    def __call__(self, sample: Dict[str, Image]) -> Dict[str, Image]:
         img = sample['image']
         mask = sample['label']
         if random.random() < 0.5:
@@ -66,10 +83,15 @@ class RandomGaussianBlur(object):
 
 
 class FixedScaleCrop(object):
-    def __init__(self, crop_size=512):
+    def __init__(self, crop_size: int = 512):
+        """
+        Crop the image to the specified size
+        Args:
+            crop_size: The size of the cropped image.
+        """
         self.crop_size = crop_size
 
-    def __call__(self, sample):
+    def __call__(self, sample: Dict[str, Image]) -> Dict[str, Image]:
         img = sample['image']
         mask = sample['label']
         short_size = self.crop_size
@@ -94,10 +116,18 @@ class FixedScaleCrop(object):
 
 
 class Normalize(object):
-    def __init__(self, mean=(0, 0, 0), std=(0, 0, 0)):
+    normalize: Callable
+
+    def __init__(self, mean: Iterable[float] = (0, 0, 0), std: Iterable[float] = (0, 0, 0)):
+        """
+         Normalizes using the mean and standard deviation
+        Args:
+            mean: The mean value of the distribution
+            std: The standard value of the distribution
+        """
         self.normalize = transforms.Normalize(mean=mean, std=std)
 
-    def __call__(self, sample):
+    def __call__(self, sample: Dict[str, Image]) -> Dict[str, Image]:
         img = sample['image']
         img = self.normalize(img)
         return {
@@ -107,10 +137,15 @@ class Normalize(object):
 
 
 class ToTensor(object):
+    to_tensor: Callable
+
     def __init__(self):
+        """
+        Transforms the numpy array to torch tensor
+        """
         self.to_tensor = transforms.ToTensor()
 
-    def __call__(self, sample):
+    def __call__(self, sample: Dict[str, Image]) -> Dict[str, torch.Tensor]:
         img = torch.tensor(np.array(sample['image']).astype(np.float32).transpose((2, 0, 1)))
 
         mask = torch.tensor(np.array(sample['label']).astype(np.float32))

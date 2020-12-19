@@ -1,14 +1,16 @@
+from typing import Tuple, Callable, Optional, List, Iterable, Union, Literal
+
 import numpy as np
 import torch.utils.data as data
 from torchvision import transforms
 
 from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
     non_iid_partition_with_dirichlet_distribution
-from .datasets import CocoSegmentation
+from .dataset import CocoSegmentation
 from .transforms import Normalize, ToTensor, FixedResize
 
 
-def _data_transforms_coco_segmentation():
+def _data_transforms_coco_segmentation() -> Tuple[Callable, Callable]:
     COCO_MEAN = (0.485, 0.456, 0.406)
     COCO_STD = (0.229, 0.224, 0.225)
 
@@ -22,16 +24,16 @@ def _data_transforms_coco_segmentation():
 
 
 # for centralized training
-def get_dataloader(_, data_dir, train_bs, test_bs, data_idxs=None):
+def get_dataloader(_, data_dir: str, train_bs: int, test_bs: int, data_idxs: Optional[List[int]] = None) -> Iterable[Union[data.DataLoader, int]]:
     return get_dataloader_coco_segmentation(data_dir, train_bs, test_bs, data_idxs)
 
 
 # for local devices
-def get_dataloader_test(data_dir, train_bs, test_bs, data_idxs_train, data_idxs_test):
+def get_dataloader_test(data_dir: str, train_bs: int, test_bs: int, data_idxs_train: Optional[List[int]], data_idxs_test: Optional[List[int]]) -> Iterable[Union[data.DataLoader, int]]:
     return get_dataloader_coco_segmentation_test(data_dir, train_bs, test_bs, data_idxs_train, data_idxs_test)
 
 
-def get_dataloader_coco_segmentation(data_dir, train_bs, test_bs, data_idxs=None):
+def get_dataloader_coco_segmentation(data_dir: str, train_bs: int, test_bs: int, data_idxs: Optional[List[int]] = None) -> Iterable[Union[data.DataLoader, int]]:
     transform_train, transform_test = _data_transforms_coco_segmentation()
 
     train_ds = CocoSegmentation(data_dir,
@@ -51,7 +53,7 @@ def get_dataloader_coco_segmentation(data_dir, train_bs, test_bs, data_idxs=None
     return train_dl, test_dl, train_ds.num_classes
 
 
-def get_dataloader_coco_segmentation_test(data_dir, train_bs, test_bs, data_idxs_train=None, data_idxs_test=None):
+def get_dataloader_coco_segmentation_test(data_dir: str, train_bs: int, test_bs: int, data_idxs_train: Optional[List[int]] = None, data_idxs_test: Optional[List[int]] = None) -> Iterable[Union[data.DataLoader, int]]:
     transform_train, transform_test = _data_transforms_coco_segmentation()
 
     train_ds = CocoSegmentation(data_dir,
@@ -72,7 +74,7 @@ def get_dataloader_coco_segmentation_test(data_dir, train_bs, test_bs, data_idxs
     return train_dl, test_dl, train_ds.num_classes
 
 
-def load_coco_segmentation_data(data_dir):
+def load_coco_segmentation_data(data_dir: str) -> Iterable[Union[List[int], np.ndarray, Sized[str]]]:
     transform_train, transform_test = _data_transforms_coco_segmentation()
 
     train_ds = CocoSegmentation(data_dir, split='train', transform=transform_train, download_dataset=False)
@@ -82,7 +84,7 @@ def load_coco_segmentation_data(data_dir):
 
 
 # Get a partition map for each client
-def partition_data(data_dir, partition, n_nets, alpha):
+def partition_data(data_dir: str, partition: Literal['homo', 'hetero'], n_nets: int, alpha: float):
     net_data_idx_map = None
     train_images, train_targets, train_cat_ids, _, __, ___ = load_coco_segmentation_data(data_dir)
     n_train = len(train_images)  # Number of training samples
@@ -97,16 +99,16 @@ def partition_data(data_dir, partition, n_nets, alpha):
     # TODO: Add custom non-iid distribution option - hetero-fix
     elif partition == "hetero":
         categories = train_cat_ids  # category names
-        net_dataidx_map = non_iid_partition_with_dirichlet_distribution(train_targets, n_nets, categories, alpha,
-                                                                        task='segmentation')
+        net_data_idx_map = non_iid_partition_with_dirichlet_distribution(train_targets, n_nets, categories, alpha,
+                                                                         task='segmentation')
 
-    train_data_cls_counts = record_data_stats(train_targets, net_dataidx_map, task='segmentation')
+    train_data_cls_counts = record_data_stats(train_targets, net_data_idx_map, task='segmentation')
 
     return net_data_idx_map, train_data_cls_counts
 
 
-def load_partition_data_distributed_coco_segmentation(process_id, dataset, data_dir, partition_method, partition_alpha,
-                                                      client_number, batch_size):
+def load_partition_data_distributed_coco_segmentation(process_id: int, dataset: CocoSegmentation, data_dir: str, partition_method: Literal['homo', 'hetero'], partition_alpha: float,
+                                                      client_number: int, batch_size: int):
     net_data_idx_map, train_data_cls_counts = partition_data(data_dir,
                                                              partition_method,
                                                              client_number,
@@ -138,8 +140,8 @@ def load_partition_data_distributed_coco_segmentation(process_id, dataset, data_
 
 
 # Called from main_fedseg
-def load_partition_data_coco_segmentation(dataset, data_dir, partition_method, partition_alpha, client_number,
-                                          batch_size):
+def load_partition_data_coco_segmentation(dataset: CocoSegmentation, data_dir: str, partition_method: Literal['homo', 'hetero'], partition_alpha: float, client_number: int,
+                                          batch_size: int):
     net_data_idx_map, train_data_cls_counts = partition_data(data_dir,
                                                              partition_method,
                                                              client_number,

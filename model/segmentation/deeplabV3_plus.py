@@ -213,6 +213,7 @@ class DeepLabV3_plus(nn.Module):
         else:
             BatchNorm2d = nn.BatchNorm2d
 
+        self.n_classes = n_classes
         self.feature_extractor = FeatureExtractor(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained)
         self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size = torch.Size([513, 513]), output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
 

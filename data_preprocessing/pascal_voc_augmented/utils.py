@@ -1,8 +1,8 @@
 import sys
 import os
 import requests
-
-from zipfile import ZipFile
+import tarfile
+import logging
 
 
 def __convert_size(size_in_bytes, unit):
@@ -34,7 +34,7 @@ def _download_file(name, url, file_path, unit):
     unit (str): The unit to convert to.
   """
     with open(file_path, 'wb') as f:
-        print('Downloading {}...'.format(name))
+        logging.info('Downloading {}...'.format(name))
         response = requests.get(url, stream=True)
         if response.status_code != 200:
             raise EnvironmentError('Encountered error while fetching. Status Code: {}, Error: {}'.format(response.status_code,
@@ -57,7 +57,7 @@ def _download_file(name, url, file_path, unit):
                                                   human_readable_downloaded, human_readable_total))
                 sys.stdout.flush()
     sys.stdout.write('\n')
-    print('Download Completed.')
+    logging.info('Download Completed.')
 
 
 def _extract_file(file_path, extract_dir):
@@ -68,9 +68,9 @@ def _extract_file(file_path, extract_dir):
     file_path (str): The local path where the zip file is located.
     extract_dir (str): The local path where the files must be extracted.
   """
-    with ZipFile(file_path, 'r') as zip:
-        print('Extracting {} to {}...'.format(file_path, extract_dir))
-        zip.extractall(extract_dir)
-        zip.close()
+    with tarfile.open(file_path) as tar:
+        logging.info('Extracting {} to {}...'.format(file_path, extract_dir))
+        tar.extractall(path=extract_dir)
+        tar.close()
         os.remove(file_path)
-        print('Extracted {}'.format(file_path))
+        logging.info('Extracted {}'.format(file_path))

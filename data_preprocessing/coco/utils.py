@@ -1,16 +1,22 @@
 import sys
 import os
+from pathlib import PurePath
+
 import requests
 
 from zipfile import ZipFile
 
 
-def __convert_size(size_in_bytes, unit):
+def __convert_size(size_in_bytes: int, unit: str) -> str:
     """
     Converts the bytes to human readable size format.
+
     Args:
-        size_in_bytes (int): The number of bytes to convert
-        unit (str): The unit to convert to.
+        size_in_bytes: The number of bytes to convert
+        unit: The unit to convert to.
+
+    Returns:
+        The converted size string.
     """
     if unit == 'GB':
         return '{:.2f} GB'.format(size_in_bytes / (1024 * 1024 * 1024))
@@ -22,16 +28,16 @@ def __convert_size(size_in_bytes, unit):
         return '{:.2f} bytes'.format(size_in_bytes)
 
 
-def _download_file(name, url, file_path, unit):
+def _download_file(name: str, url: str, file_path: PurePath, unit: str) -> None:
     """
-  Downloads the file to the path specified
+    Downloads the file to the path specified
 
-  Args:
-    name (str): The name to print in console while downloading.
-    url (str): The url to download the file from.
-    file_path (str): The local path where the file should be saved.
-    unit (str): The unit to convert to.
-  """
+    Args:
+        name: The name to print in console while downloading.
+        url: The url to download the file from.
+        file_path: The local path where the file should be saved.
+        unit: The unit to convert to.
+    """
     with open(file_path, 'wb') as f:
         print('Downloading {}...'.format(name))
         response = requests.get(url, stream=True)
@@ -60,17 +66,17 @@ def _download_file(name, url, file_path, unit):
     print('Download Completed.')
 
 
-def _extract_file(file_path, extract_dir):
+def _extract_file(file_path: PurePath, extract_dir: PurePath) -> None:
     """
-  Extracts the file to the specified path.
+    Extracts the file to the specified path.
 
-  Args:
-    file_path (str): The local path where the zip file is located.
-    extract_dir (str): The local path where the files must be extracted.
-  """
-    with ZipFile(file_path, 'r') as zip:
+    Args:
+        file_path: The local path where the zip file is located.
+        extract_dir: The local path where the files must be extracted.
+    """
+    with ZipFile(file_path, 'r') as zip_file:
         print('Extracting {} to {}...'.format(file_path, extract_dir))
-        zip.extractall(extract_dir)
-        zip.close()
+        zip_file.extractall(extract_dir)
+        zip_file.close()
         os.remove(file_path)
         print('Extracted {}'.format(file_path))
