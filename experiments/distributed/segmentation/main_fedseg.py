@@ -21,8 +21,9 @@ from FedML.fedml_api.distributed.fedseg.utils import count_parameters
 
 from data_preprocessing.coco.data_loader import load_partition_data_distributed_coco, load_partition_data_coco
 from data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc, \
-    load_partition_data_pascal_voc
+    load_partition_data_pascal_voc    
 from model.segmentation.deeplabV3_plus import DeepLabV3_plus
+from training.segmentation_trainer import SegmentationTrainer
 
 def add_args(parser):
     """
@@ -279,8 +280,11 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=class_num)
 
+    # define my own trainer
+    model_trainer = SegmentationTrainer(model, args)
+
     logging.info("Calling FedML_FedSeg_distributed")
 
     # start "federated averaging (FedAvg)"
     FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, data_local_num_dict,
-                             train_data_local_dict, test_data_local_dict, class_num, args)
+                             train_data_local_dict, test_data_local_dict, args, model_trainer)
