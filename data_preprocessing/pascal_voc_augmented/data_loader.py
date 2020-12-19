@@ -4,7 +4,7 @@ from torchvision import transforms
 
 from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
     non_iid_partition_with_dirichlet_distribution
-from .datasets import PascalVocAugmentedSegmentation
+from .dataset import PascalVocAugmentedSegmentation
 from .transforms import RandomMirror, RandomScaleCrop, RandomGaussianBlur, ToTensor, Normalize, FixedScaleCrop
 
 

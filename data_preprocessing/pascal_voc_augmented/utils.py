@@ -1,8 +1,8 @@
 import sys
 import os
 import requests
-
-from zipfile import ZipFile
+import tarfile
+import logging
 
 
 def __convert_size(size_in_bytes, unit):
@@ -68,9 +68,9 @@ def _extract_file(file_path, extract_dir):
     file_path (str): The local path where the zip file is located.
     extract_dir (str): The local path where the files must be extracted.
   """
-    with ZipFile(file_path, 'r') as zip:
-        print('Extracting {} to {}...'.format(file_path, extract_dir))
-        zip.extractall(extract_dir)
-        zip.close()
+    with tarfile.open(file_path) as tar:
+        logging.info('Extracting {} to {}...'.format(file_path, extract_dir))
+        tar.extractall(path=extract_dir)
+        tar.close()
         os.remove(file_path)
-        print('Extracted {}'.format(file_path))
+        logging.info('Extracted {}'.format(file_path))

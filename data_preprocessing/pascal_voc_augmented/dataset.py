@@ -1,10 +1,13 @@
 import os
+import shutil
 from pathlib import Path
 
 import numpy as np
 import scipy.io as sio
 from PIL import Image
 from torch.utils.data import Dataset
+
+from .utils import _download_file, _extract_file
 
 
 class PascalVocAugmentedSegmentation(Dataset):
@@ -15,6 +18,7 @@ class PascalVocAugmentedSegmentation(Dataset):
                  transform=None,
                  data_idxs=None):
 
+        self.root_dir = root_dir
         self.images_dir = Path('{}/dataset/img'.format(root_dir))
         self.masks_dir = Path('{}/dataset/cls'.format(root_dir))
         self.split_file = Path('{}/dataset/{}.txt'.format(root_dir, split))
@@ -22,12 +26,36 @@ class PascalVocAugmentedSegmentation(Dataset):
         self.images = list()
         self.masks = list()
         self.targets = None
+
+        if download_dataset:
+            self.__download_dataset()
+
         self.__preprocess()
         if data_idxs is not None:
             self.images = [self.images[i] for i in data_idxs]
             self.masks = [self.masks[i] for i in data_idxs]
 
         self.__generate_targets()
+
+    def __download_dataset(self) -> None:
+        """
+        Downloads the PASCAL VOC Augmented dataset.
+
+        """
+        files = {
+            'pascalvocaug': {
+                'name': 'PASCAL Train and Test Augmented Dataset',
+                'file_path': Path('{}/benchmark.tgz'.format(self.root_dir)),
+                'url': 'http://www.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/semantic_contours/benchmark'
+                       '.tgz',
+                'unit': 'GB'
+            }
+        }
+
+        _download_file(**files['pascalvocaug'])
+        _extract_file(files['pascalvocaug']['file_path'], self.root_dir)
+        shutil.move('{}/benchmark_RELEASE/dataset'.format(self.root_dir), self.root_dir)
+        shutil.rmtree('{}/benchmark_RELEASE'.format(self.root_dir))
 
     def __preprocess(self):
         with open(self.split_file, 'r') as file_names:
