@@ -180,15 +180,14 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
                           sync_bn=args.sync_bn)
 
         if args.backbone_freezed:
-            # logging.info('Freezing Backbone')
+            logging.info('Freezing Backbone')
             for param in model.feature_extractor.parameters():
                 param.requires_grad = False
         else:
-            # logging.info('Finetuning Backbone')
-            pass
+            logging.info('Finetuning Backbone')
 
         num_params = count_parameters(model)
-        logging.info("DeepLabV3_plus Model Size = " + str(num_params))
+        logging.info("DeepLabV3_plus Model Size : {}".format(num_params))
     else:
         raise ('Not Implemented Error')
 
@@ -239,11 +238,7 @@ if __name__ == "__main__":
 
     hostname = socket.gethostname()
     logging.info("Host and process details")
-    logging.info("process ID: " + str(process_id) +
-                 ", host name: " + hostname + "########" +
-                 ", process ID: " + str(os.getpid()) +
-                 ", process name: " + str(psutil.Process(os.getpid())) +
-                 ", worker number: " + str(worker_number))
+    logging.info("process ID: {0}, host name: {1}, process ID: {2}, process name: {3}, worker number: {4}".format(process_id,hostname,os.getpid(), psutil.Process(os.getpid()), worker_number))
 
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
