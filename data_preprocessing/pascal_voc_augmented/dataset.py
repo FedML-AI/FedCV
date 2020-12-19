@@ -1,20 +1,44 @@
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
+from typing import Literal, Callable, Optional, List, TypedDict, Sized
 
 import numpy as np
 import scipy.io as sio
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
 
 
-class PascalVocAugmentedSegmentation(Dataset):
-    def __init__(self,
-                 root_dir='../../../data/pascal_voc_augmented',
-                 split='train',
-                 download_dataset=False,
-                 transform=None,
-                 data_idxs=None):
+class Datapoint(TypedDict):
+    image: torch.FloatTensor
+    mask: torch.IntTensor
 
+
+class PascalVocAugmentedSegmentation(Dataset):
+    images_dir: PurePath
+    masks_dir: PurePath
+    split_file: PurePath
+    transform: Callable
+    images: List[str]
+    masks: List[str]
+    targets: np.ndarray
+
+    def __init__(self,
+                 root_dir: str = '../../../data/pascal_voc_augmented',
+                 split: Literal['train', 'test', 'val'] ='train',
+                 download_dataset: bool = False,
+                 transform: Optional[Callable] = None,
+                 data_idxs: Optional[List[int]] = None) -> None:
+        """
+        The dataset class for Pascal VOC Augmented Dataset.
+
+        Args:
+            root_dir: The path to the dataset.
+            split: The type of dataset to use (train, test, val).
+            download_dataset: Specify whether to download the dataset if not present.
+            transform: The custom transformations to be applied to the dataset.
+            data_idxs: The list of indexes used to partition the dataset.
+        """
         self.images_dir = Path('{}/dataset/img'.format(root_dir))
         self.masks_dir = Path('{}/dataset/cls'.format(root_dir))
         self.split_file = Path('{}/dataset/{}.txt'.format(root_dir, split))
@@ -29,7 +53,13 @@ class PascalVocAugmentedSegmentation(Dataset):
 
         self.__generate_targets()
 
-    def __preprocess(self):
+    def __preprocess(self) -> None:
+        """
+        Pre-process the dataset to get mask and file paths of the images.
+
+        Raises:
+            AssertionError: When length of images and masks differs.
+        """
         with open(self.split_file, 'r') as file_names:
             for file_name in file_names:
                 img_path = Path('{}/{}.jpg'.format(self.images_dir, file_name.strip(' \n')))
@@ -40,8 +70,11 @@ class PascalVocAugmentedSegmentation(Dataset):
                 self.masks.append(mask_path)
             assert len(self.images) == len(self.masks)
 
-    def __generate_targets(self):
-        self.targets = list()
+    def __generate_targets(self) -> None:
+        """
+        Used to generate targets which in turn is used to partition data in an non-IID setting.
+        """
+        targets = list()
         for i in range(len(self.images)):
             mat = sio.loadmat(self.masks[i], mat_dtype=True, squeeze_me=True, struct_as_record=False)
             categories = mat['GTcls'].CategoriesPresent
@@ -49,10 +82,10 @@ class PascalVocAugmentedSegmentation(Dataset):
                 categories = np.asarray(list(categories))
             else:
                 categories = np.asarray([categories]).astype(np.uint8)
-            self.targets.append(categories)
-        self.targets = np.asarray(self.targets)
+            targets.append(categories)
+        self.targets = np.asarray(targets)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Datapoint:
         img = Image.open(self.images[index]).convert('RGB')
         mat = sio.loadmat(self.masks[index], mat_dtype=True, squeeze_me=True, struct_as_record=False)
         mask = mat['GTcls'].Segmentation
@@ -63,12 +96,15 @@ class PascalVocAugmentedSegmentation(Dataset):
             sample = self.transform(sample)
         return sample
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.images)
 
     @property
-    def classes(self):
-        """Category names."""
+    def classes(self) -> Sized[str]:
+        """
+        Returns:
+            The clasess present in the Pascal VOC Augmented dataset.
+        """
         return ('__background__', 'airplane', 'bicycle', 'bird', 'boat', 'bottle',
                 'bus', 'car', 'cat', 'chair', 'cow', 'dining table', 'dog', 'horse',
                 'motorcycle', 'person', 'potted-plant', 'sheep', 'sofa', 'television',
