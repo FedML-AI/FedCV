@@ -28,10 +28,8 @@ class SegmentationTrainer(ModelTrainer):
     def train(self, train_data, device):   
         model = self.model
         args = self.args
-
         model.to(device)
         model.train()
-
         criterion =  SegmentationLosses().build_loss(mode=args.loss_type)
         scheduler = LR_Scheduler(args.lr_scheduler, args.lr, args.epochs, len(train_data))         
 
