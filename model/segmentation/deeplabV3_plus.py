@@ -6,14 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 
-# add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-from fedml_api.model.cv.xception import *
-from fedml_api.model.cv.resnetLab import *
-from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-
-# from batchnorm_utils import SynchronizedBatchNorm2d
-
+from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from FedML.fedml_api.model.cv.xception import *
+from .resnet import *
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, dilation, BatchNorm):
