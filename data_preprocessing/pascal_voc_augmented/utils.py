@@ -34,7 +34,7 @@ def _download_file(name, url, file_path, unit):
     unit (str): The unit to convert to.
   """
     with open(file_path, 'wb') as f:
-        print('Downloading {}...'.format(name))
+        logging.info('Downloading {}...'.format(name))
         response = requests.get(url, stream=True)
         if response.status_code != 200:
             raise EnvironmentError('Encountered error while fetching. Status Code: {}, Error: {}'.format(response.status_code,
@@ -57,7 +57,7 @@ def _download_file(name, url, file_path, unit):
                                                   human_readable_downloaded, human_readable_total))
                 sys.stdout.flush()
     sys.stdout.write('\n')
-    print('Download Completed.')
+    logging.info('Download Completed.')
 
 
 def _extract_file(file_path, extract_dir):

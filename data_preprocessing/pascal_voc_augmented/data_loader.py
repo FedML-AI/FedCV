@@ -94,6 +94,7 @@ def load_pascal_voc_data(data_dir: str) -> Iterable[Union[List[int], np.ndarray,
 
 # Get a partition map for each client
 def partition_data(data_dir: str, partition: Literal['homo', 'hetero'], n_nets: int, alpha: float):
+    logging.info("********************* Partitioning data **********************")
     net_data_idx_map = None
     train_images, train_targets, train_categories, _, __, ___ = load_pascal_voc_data(data_dir)
     n_train = len(train_images)  # Number of training samples
@@ -129,6 +130,8 @@ def load_partition_data_distributed_pascal_voc(process_id: int, dataset: PascalV
     # get global test data
     if process_id == 0:
         train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+        logging.info("Number of global train batches: {} and test batches: {}".format(len(train_data_global),len(test_data_global)))
+        
         train_data_local_dict = None
         test_data_local_dict = None
         data_local_num_dict = None
@@ -136,11 +139,13 @@ def load_partition_data_distributed_pascal_voc(process_id: int, dataset: PascalV
         # get local dataset
         client_id = process_id - 1
         data_idxs = net_data_idx_map[client_id]
-        # print(data_idxs)
+        
         local_data_num = len(data_idxs)
+        logging.info("Total number of local images: {} in client ID {}".format(local_data_num, process_id))
         # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
                                                                       data_idxs)
+        logging.info("Number of local train batches: {} and test batches: {} in client ID {}".format(len(train_data_local),len(test_data_local),process_id))
 
         data_local_num_dict = {client_id: local_data_num}
         train_data_local_dict = {client_id: train_data_local}
@@ -162,6 +167,8 @@ def load_partition_data_pascal_voc(dataset: PascalVocAugmentedSegmentation, data
 
     # Global train and test data
     train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+    logging.info("Number of global train batches: {} and test batches: {}".format(len(train_data_global),len(test_data_global)))
+
     test_data_num = len(test_data_global)
 
     # get local dataset
@@ -172,11 +179,14 @@ def load_partition_data_pascal_voc(dataset: PascalVocAugmentedSegmentation, data
     for client_idx in range(client_number):
         data_idxs = net_data_idx_map[client_idx]  # get dataId list for client generated using Dirichlet sampling
         local_data_num = len(data_idxs)  # How many samples does client have?
+        logging.info("Total number of local images: {} in client ID {}".format(local_data_num, client_idx))
+
         data_local_num_dict[client_idx] = local_data_num
 
         # training batch size = 64; algorithms batch size = 32
         train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
                                                                       data_idxs)
+        logging.info("Number of local train batches: {} and test batches: {} in client ID {}".format(len(train_data_local),len(test_data_local),client_idx))
 
         # Store data loaders for each client as they contain specific data
         train_data_local_dict[client_idx] = train_data_local

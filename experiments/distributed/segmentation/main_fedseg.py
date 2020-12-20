@@ -31,6 +31,9 @@ def add_args(parser):
     return a parser added with args required by fit
     """
     # Training settings
+    parser.add_argument('--process_name', type=str, default='FedSeg-distributed:',
+                        help='Machine process names')
+
     parser.add_argument('--model', type=str, default='deeplabV3_plus', metavar='N',
                         help='neural network used in training')
 
@@ -135,15 +138,6 @@ def add_args(parser):
 
     return args
 
-    ### Args to add ###
-    # lr_scheduler
-    # outstride
-    # freeze_bn
-    # sync_bn
-    # categories
-    # backbone
-    # backbone-pretrained
-
 
 def load_data(process_id, args, dataset_name):
     if dataset_name == "coco":
@@ -156,12 +150,6 @@ def load_data(process_id, args, dataset_name):
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict,
     train_data_local_dict, test_data_local_dict, class_num]
-
-    # train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num = data_loader(
-    #     process_id, args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
-    #     args.client_num_in_total, args.batch_size)
-    # dataset = [train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local,
-    #            class_num]
 
     return dataset
 
@@ -176,9 +164,6 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
                           freeze_bn=args.freeze_bn,
                           sync_bn=args.sync_bn)
 
-
-        logging.info('Args.Backbone: {}'.format(args.backbone_freezed))
-
         if args.backbone_freezed:
             logging.info('Freezing Backbone')
             for param in model.feature_extractor.parameters():
@@ -187,7 +172,7 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
             logging.info('Finetuning Backbone')
 
         num_params = count_parameters(model)
-        logging.info("DeepLabV3_plus Model Size = " + str(num_params))
+        logging.info("DeepLabV3_plus Model Size : {}".format(num_params))
     else:
         raise ('Not Implemented Error')
 
@@ -203,28 +188,14 @@ def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine, gpu_ser
     for client_index in range(fl_worker_num):
         gpu_index = (client_index % gpu_num_per_machine)
         process_gpu_dict[client_index] = gpu_index + gpu_server_num
-    logging.info(process_gpu_dict)
+    
     device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
-    logging.info(device)
+    logging.info('GPU process allocation {0}'.format(process_gpu_dict))
+    logging.info('GPU device available {0}'.format(device))
     return device
 
 
 if __name__ == "__main__":
-    now = datetime.datetime.now()
-    time_start = now.strftime("%Y-%m-%d %H:%M:%S")
-    
-    logging.info("Executing Image Segmentation at time: {0}".format(time_start))
-    
-    # initialize distributed computing (MPI)
-    comm, process_id, worker_number = FedML_init()
-
-    # parse python script input parameters
-    parser = argparse.ArgumentParser()
-    args = add_args(parser)
-    print(args)
-    # customize the process name
-    str_process_name = "Deeplab-Resnet-Coco (distributed):" + str(process_id)
-    setproctitle.setproctitle(str_process_name)
 
     # customize the log format
     logging.basicConfig(filename='info.log',
@@ -233,21 +204,35 @@ if __name__ == "__main__":
                             process_id) + ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S')
 
+    now = datetime.datetime.now()
+    time_start = now.strftime("%Y-%m-%d %H:%M:%S")    
+    logging.info("Executing Image Segmentation at time: {0}".format(time_start))
+
+    # parse python script input parameters
+    parser = argparse.ArgumentParser()
+    args = add_args(parser)
+    logging.info('Given arguments {0}'.format(args))
+
+    # initialize distributed computing (MPI)
+    comm, process_id, worker_number = FedML_init()
+
+    # customize the process name
+    str_process_name = args.process_name + str(process_id)
+    setproctitle.setproctitle(str_process_name)
+
     hostname = socket.gethostname()
-    logging.info("#############process ID = " + str(process_id) +
-                 ", host name = " + hostname + "########" +
-                 ", process ID = " + str(os.getpid()) +
-                 ", process Name = " + str(psutil.Process(os.getpid())))
+    logging.info("Host and process details")
+    logging.info("process ID: {0}, host name: {1}, process ID: {2}, process name: {3}, worker number: {4}".format(process_id,hostname,os.getpid(), psutil.Process(os.getpid()), worker_number))
 
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
         wandb.init(
             # project="federated_nas",
-            project="fedml",
-            name="FedSeg(d)" + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
+            project = "fedml",
+            name = args.process_name + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs) + "-lr" + str(
                 args.lr),
-            config=args
+            config = args
         )
 
     # Set the random seed. The np.random seed determines the dataset partition.
@@ -267,7 +252,7 @@ if __name__ == "__main__":
     # machine 3: worker2, worker6;
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
-    logging.info("process_id = %d, size = %d" % (process_id, worker_number))
+    
     device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server, args.gpu_server_num)
 
     # load data
@@ -285,6 +270,5 @@ if __name__ == "__main__":
 
     logging.info("Calling FedML_FedSeg_distributed")
 
-    # start "federated averaging (FedAvg)"
     FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, data_local_num_dict,
                              train_data_local_dict, test_data_local_dict, args, model_trainer)
