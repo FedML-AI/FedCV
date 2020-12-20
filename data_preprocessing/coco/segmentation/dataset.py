@@ -1,11 +1,14 @@
 import os
 import sys
+import numpy as np
+import logging
+
+import torch
+
 from pathlib import Path, PurePath
 from typing import Callable, List, Any, Tuple, TypedDict, Optional, Literal
 
-import numpy as np
 import pycocotools.mask as coco_mask
-import torch
 from PIL import Image
 from pycocotools.coco import COCO
 
@@ -87,7 +90,7 @@ class CocoSegmentation(COCOBase):
         Returns:
             The valid set of image ids
         """
-        print("Pre-processing mask, this will take a while. It only runs once for each split.")
+        logging.info("Pre-processing mask, this will take a while. It only runs once for each split.")
         new_ids = []
         for i in range(len(ids)):
             img_id = ids[i]
@@ -99,7 +102,7 @@ class CocoSegmentation(COCOBase):
                 '\r[{}{}] {}% ({}/{})'.format('#' * done, '.' * (50 - done), int((i / len(ids)) * 100), i, len(ids)))
         sys.stdout.write('\n')
         sys.stdout.flush()
-        print('Found number of qualified images: ', len(new_ids))
+        logging.info('Found number of qualified images: {}'.format(len(new_ids)))
         torch.save(new_ids, self.ids_file)
         return new_ids
 

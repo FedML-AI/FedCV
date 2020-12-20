@@ -138,16 +138,6 @@ def add_args(parser):
 
     return args
 
-    ### Args to add ###
-    # lr_scheduler
-    # outstride
-    # freeze_bn
-    # sync_bn
-    # categories
-    # backbone
-    # backbone-pretrained
-    # process_name
-
 
 def load_data(process_id, args, dataset_name):
     if dataset_name == "coco":
@@ -160,12 +150,6 @@ def load_data(process_id, args, dataset_name):
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict,
     train_data_local_dict, test_data_local_dict, class_num]
-
-    # train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local, class_num = data_loader(
-    #     process_id, args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
-    #     args.client_num_in_total, args.batch_size)
-    # dataset = [train_data_num, train_data_global, test_data_global, local_data_num, train_data_local, test_data_local,
-    #            class_num]
 
     return dataset
 
@@ -231,7 +215,6 @@ if __name__ == "__main__":
 
     # initialize distributed computing (MPI)
     comm, process_id, worker_number = FedML_init()
-    # logging.info("process_id = %d, size = %d" % (process_id, worker_number))
 
     # customize the process name
     str_process_name = args.process_name + str(process_id)
@@ -287,6 +270,5 @@ if __name__ == "__main__":
 
     logging.info("Calling FedML_FedSeg_distributed")
 
-    # start "federated segmentation (FedSeg)"
     FedML_FedSeg_distributed(process_id, worker_number, device, comm, model, train_data_num, data_local_num_dict,
                              train_data_local_dict, test_data_local_dict, args, model_trainer)
