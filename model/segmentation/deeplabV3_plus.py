@@ -1,6 +1,7 @@
 import os, sys
 import numpy as np
 import math
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -195,11 +196,7 @@ class DeepLabV3_plus(nn.Module):
     def __init__(self, backbone='resnet', image_size=torch.Size([513, 513]) , nInputChannels=3, n_classes=21, output_stride=16, pretrained=False, freeze_bn=False, sync_bn=False, _print=True):
         
         if _print:
-            print("Constructing DeepLabv3+ model...")
-            print("Backbone: {}".format(backbone))
-            print("Number of classes: {}".format(n_classes))
-            print("Number of Input Channels: {}".format(nInputChannels))
-            print("Output stride: {}".format(output_stride))
+            logging.info("Constructing Deeplabv3+ model with Backbone {0}, number of classes {1}, number of input channels {2}, output stride {3}".format(backbone,n_classes,nInputChannels,output_stride))
 
         super(DeepLabV3_plus, self).__init__()
 
