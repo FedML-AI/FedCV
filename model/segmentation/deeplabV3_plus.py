@@ -7,8 +7,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 
-from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-from FedML.fedml_api.model.cv.xception import *
+
+# add the FedML root directory to the python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from fedml_api.model.cv.xception import *
 from .resnet import *
 
 class _ASPPModule(nn.Module):
@@ -163,7 +166,6 @@ class FeatureExtractor(nn.Module):
 
     @staticmethod
     def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True):
-        print(backbone)
         if backbone == 'xception':
             return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
         elif backbone == 'resnet':

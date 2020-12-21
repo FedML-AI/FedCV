@@ -2,7 +2,8 @@ import os, sys, math
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
-from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 class Bottleneck(nn.Module):
     expansion = 4
