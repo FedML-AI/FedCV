@@ -166,7 +166,6 @@ class FeatureExtractor(nn.Module):
 
     @staticmethod
     def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True):
-        print(backbone)
         if backbone == 'xception':
             return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
         elif backbone == 'resnet':

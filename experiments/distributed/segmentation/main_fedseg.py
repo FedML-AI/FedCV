@@ -141,7 +141,8 @@ def add_args(parser):
 
 def load_data(process_id, args, dataset_name):
     if dataset_name == "coco":
-        data_loader = load_partition_data_coco
+        pass
+       # data_loader = load_partition_data_coco
     elif dataset_name == "pascal_voc":
         data_loader = load_partition_data_pascal_voc
     train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict, \
