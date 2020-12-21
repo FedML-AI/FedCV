@@ -19,9 +19,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 from FedML.fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
 from FedML.fedml_api.distributed.fedseg.utils import count_parameters
 
-from data_preprocessing.coco.data_loader import load_partition_data_distributed_coco, load_partition_data_coco
-from data_preprocessing.pascal_voc.data_loader import load_partition_data_distributed_pascal_voc, \
-    load_partition_data_pascal_voc    
+#from data_preprocessing.coco.segmentation.data_loader.py import load_partition_data_distributed_coco_segmentation, load_partition_data_coco_segmentation
+from data_preprocessing.pascal_voc_augmented.data_loader import load_partition_data_distributed_pascal_voc, \
+    load_partition_data_pascal_voc
 from model.segmentation.deeplabV3_plus import DeepLabV3_plus
 from training.segmentation_trainer import SegmentationTrainer
 
@@ -43,13 +43,13 @@ def add_args(parser):
     parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=True,
+    parser.add_argument('--backbone_freezed', type=bool, default=False,
                         help='Freeze backbone to extract features only once (default: False)')
 
-    parser.add_argument('--extract_feat', type=bool, default=True,
+    parser.add_argument('--extract_feat', type=bool, default=False,
                         help='Extract Feature Maps of (default: False) NOTE: --backbone_freezed has to be True for this argument to be considered')
 
-    parser.add_argument('--outstride', type=int, default=8,
+    parser.add_argument('--outstride', type=int, default=16,
                         help='network output stride (default: 16)')
 
     # # TODO: Remove this argument
@@ -77,7 +77,7 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=3, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--save_client_model', type=bool, default=True,
+    parser.add_argument('--save_client_model', type=bool, default=False,
                         help='whether to save locally trained model by clients (default: False')
 
     parser.add_argument('--batch_size', type=int, default=10, metavar='N',
@@ -121,12 +121,12 @@ def add_args(parser):
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--evaluation_frequency', type=int, default=5,
+    parser.add_argument('--evaluation_frequency', type=int, default=1,
                         help='Frequency of model evaluation on training dataset (Default: every 5th round)')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,
                         help='gpu_server_num')
-
+    
     parser.add_argument('--gpu_num_per_server', type=int, default=4,
                         help='gpu_num_per_server')
 
@@ -197,6 +197,9 @@ def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine, gpu_ser
 
 if __name__ == "__main__":
 
+    # initialize distributed computing (MPI)
+    comm, process_id, worker_number = FedML_init()
+
     # customize the log format
     logging.basicConfig(filename='info.log',
                         level=logging.INFO,
@@ -212,9 +215,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = add_args(parser)
     logging.info('Given arguments {0}'.format(args))
-
-    # initialize distributed computing (MPI)
-    comm, process_id, worker_number = FedML_init()
 
     # customize the process name
     str_process_name = args.process_name + str(process_id)
