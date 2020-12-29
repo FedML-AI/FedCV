@@ -12,11 +12,13 @@ import psutil
 import setproctitle
 import wandb
 from mpi4py import MPI
-from timm import create_model as timm_create_model
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 from torch.nn.parallel import DistributedDataParallel as DDP
+from timm import create_model as timm_create_model
+from timm.models import create_model, resume_checkpoint, load_checkpoint, convert_splitbn_model
+
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
@@ -56,19 +58,19 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=64, metavar='N',
+    parser.add_argument('--batch_size', '-b', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
 
     parser.add_argument('--client_optimizer', type=str, default='adam',
                         help='SGD with momentum; adam')
 
-    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
-                        help='learning rate (default: 0.001)')
+    # parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+    #                     help='learning rate (default: 0.001)')
 
     parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.001)
 
-    parser.add_argument('--epochs', type=int, default=5, metavar='EP',
-                        help='how many epochs will be trained locally')
+    # parser.add_argument('--epochs', type=int, default=5, metavar='EP',
+    #                     help='how many epochs will be trained locally')
 
     parser.add_argument('--comm_round', type=int, default=10,
                         help='how many round of communications we shoud use')
@@ -91,9 +93,37 @@ def add_args(parser):
     parser.add_argument('--local_rank', type=int, default=0,
                         help='given by torch.distributed.launch')
 
-    parser.add_argument('--pretrained', type=bool, default=False,
+    parser.add_argument('--pretrained',action='store_true', default=False,
                         help='Start with pretrained version of specified network (if avail)')
 
+    parser.add_argument('--distributed', action='store_true', default=False,
+                        help='If distributed training')
+
+    parser.add_argument('--if-timm-dataset', action='store_true', default=False,
+                        help='If use timm dataset augmentation')
+
+
+
+    # Dataset
+    parser.add_argument('--img-size', type=int, default=None, metavar='N',
+                        help='Image patch size (default: None => model default)')
+    parser.add_argument('--crop-pct', default=None, type=float,
+                        metavar='N', help='Input image center crop percent (for validation only)')
+    parser.add_argument('--mean', type=float, nargs='+', default=None, metavar='MEAN',
+                        help='Override mean pixel value of dataset')
+    parser.add_argument('--std', type=float, nargs='+', default=None, metavar='STD',
+                        help='Override std deviation of of dataset')
+    parser.add_argument('--interpolation', default='', type=str, metavar='NAME',
+                        help='Image resize interpolation type (overrides model)')
+    # parser.add_argument('-b', '--batch-size', type=int, default=32, metavar='N',
+    #                     help='input batch size for training (default: 32)')
+    parser.add_argument('-vb', '--validation-batch-size-multiplier', type=int, default=1, metavar='N',
+                        help='ratio of validation batch size to training batch size (default: 1)')
+
+
+    # Model parameters
+    parser.add_argument('--gp', default=None, type=str, metavar='POOL',
+                        help='Global pool type, one of (fast, avg, max, avgmax, avgmaxc). Model default if None.')
 
     # Optimizer parameters
     parser.add_argument('--opt', default='sgd', type=str, metavar='OPTIMIZER',
@@ -145,20 +175,58 @@ def add_args(parser):
                         help='LR decay rate (default: 0.1)')
 
     # Augmentation & regularization parameters
+    parser.add_argument('--no-aug', action='store_true', default=False,
+                        help='Disable all training augmentation, override other train aug args')
+    parser.add_argument('--scale', type=float, nargs='+', default=[0.08, 1.0], metavar='PCT',
+                        help='Random resize scale (default: 0.08 1.0)')
+    parser.add_argument('--ratio', type=float, nargs='+', default=[3./4., 4./3.], metavar='RATIO',
+                        help='Random resize aspect ratio (default: 0.75 1.33)')
+    parser.add_argument('--hflip', type=float, default=0.5,
+                        help='Horizontal flip training aug probability')
+    parser.add_argument('--vflip', type=float, default=0.,
+                        help='Vertical flip training aug probability')
+    parser.add_argument('--color-jitter', type=float, default=0.4, metavar='PCT',
+                        help='Color jitter factor (default: 0.4)')
+    parser.add_argument('--aa', type=str, default=None, metavar='NAME',
+                        help='Use AutoAugment policy. "v0" or "original". (default: None)'),
+    parser.add_argument('--aug-splits', type=int, default=0,
+                        help='Number of augmentation splits (default: 0, valid: 0 or >=2)')
+    parser.add_argument('--jsd', action='store_true', default=False,
+                        help='Enable Jensen-Shannon Divergence + CE loss. Use with `--aug-splits`.')
+    parser.add_argument('--reprob', type=float, default=0., metavar='PCT',
+                        help='Random erase prob (default: 0.)')
+    parser.add_argument('--remode', type=str, default='const',
+                        help='Random erase mode (default: "const")')
+    parser.add_argument('--recount', type=int, default=1,
+                        help='Random erase count (default: 1)')
+    parser.add_argument('--resplit', action='store_true', default=False,
+                        help='Do not random erase first (clean) augmentation split')
+    parser.add_argument('--mixup', type=float, default=0.0,
+                        help='mixup alpha, mixup enabled if > 0. (default: 0.)')
+    parser.add_argument('--cutmix', type=float, default=0.0,
+                        help='cutmix alpha, cutmix enabled if > 0. (default: 0.)')
+    parser.add_argument('--cutmix-minmax', type=float, nargs='+', default=None,
+                        help='cutmix min/max ratio, overrides alpha and enables cutmix if set (default: None)')
+    parser.add_argument('--mixup-prob', type=float, default=1.0,
+                        help='Probability of performing mixup or cutmix when either/both is enabled')
+    parser.add_argument('--mixup-switch-prob', type=float, default=0.5,
+                        help='Probability of switching to cutmix when both mixup and cutmix enabled')
+    parser.add_argument('--mixup-mode', type=str, default='batch',
+                        help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
+    parser.add_argument('--mixup-off-epoch', default=0, type=int, metavar='N',
+                        help='Turn off mixup after this epoch, disabled if 0 (default: 0)')
     parser.add_argument('--smoothing', type=float, default=0.1,
                         help='Label smoothing (default: 0.1)')
     parser.add_argument('--train-interpolation', type=str, default='random',
                         help='Training interpolation (random, bilinear, bicubic default: "random")')
-    parser.add_argument('--drop_rate', type=float, default=0.0,
+    parser.add_argument('--drop', type=float, default=0.0, metavar='PCT',
                         help='Dropout rate (default: 0.)')
-    parser.add_argument('--drop_connect_rate', type=float, default=None,
+    parser.add_argument('--drop-connect', type=float, default=None, metavar='PCT',
                         help='Drop connect rate, DEPRECATED, use drop-path (default: None)')
-    parser.add_argument('--drop_path_rate', type=float, default=None,
+    parser.add_argument('--drop-path', type=float, default=None, metavar='PCT',
                         help='Drop path rate (default: None)')
-    parser.add_argument('--drop_block_rate', type=float, default=None,
+    parser.add_argument('--drop-block', type=float, default=None, metavar='PCT',
                         help='Drop block rate (default: None)')
-    parser.add_argument('--global_pool', type=float, default=0,
-                        help='CI')
 
     # Batch norm parameters (only works with gen_efficientnet based models currently)
     parser.add_argument('--bn-tf', type=bool, default=False,
@@ -174,7 +242,13 @@ def add_args(parser):
     parser.add_argument('--split-bn', action='store_true',
                         help='Enable separate BN layers per augmentation split.')
 
-
+    # Model Exponential Moving Average
+    parser.add_argument('--model-ema', action='store_true', default=False,
+                        help='Enable tracking moving average of model weights')
+    parser.add_argument('--model-ema-force-cpu', action='store_true', default=False,
+                        help='Force ema to be tracked on CPU, rank=0 node only. Disables EMA validation.')
+    parser.add_argument('--model-ema-decay', type=float, default=0.9998,
+                        help='decay factor for model weights moving average (default: 0.9998)')
 
     args = parser.parse_args()
     return args
@@ -186,8 +260,9 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = distributed_centralized_ImageNet_loader(dataset=dataset_name, data_dir=args.data_dir,
-                                                 partition_method=None,
-                                                 client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                 world_size=args.client_num_in_total, 
+                                                 rank=args.rank, batch_size=args.batch_size,
+                                                 args=args)
 
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -235,11 +310,11 @@ def create_model(args, model_name, output_dim):
         model_name="mobilenetv3_large_100",
         pretrained=args.pretrained,
         num_classes=output_dim,
-        drop_rate=args.drop_rate,
-        drop_connect_rate=args.drop_connect_rate,  # DEPRECATED, use drop_path
-        drop_path_rate=args.drop_path_rate,
-        drop_block_rate=args.drop_block_rate,
-        global_pool=args.global_pool,
+        drop_rate=args.drop,
+        # drop_connect_rate=args.drop_connect,  # DEPRECATED, use drop_path
+        drop_path_rate=args.drop_path,
+        drop_block_rate=args.drop_block,
+        global_pool=args.gp,
         bn_tf=args.bn_tf,
         bn_momentum=args.bn_momentum,
         bn_eps=args.bn_eps)
@@ -249,11 +324,11 @@ def create_model(args, model_name, output_dim):
         model_name="efficientnet_b0",
         pretrained=args.pretrained,
         num_classes=output_dim,
-        drop_rate=args.drop_rate,
-        drop_connect_rate=args.drop_connect_rate,  # DEPRECATED, use drop_path
-        drop_path_rate=args.drop_path_rate,
-        drop_block_rate=args.drop_block_rate,
-        global_pool=args.global_pool,
+        drop_rate=args.drop,
+        # drop_connect_rate=args.drop_connect,  # DEPRECATED, use drop_path
+        drop_path_rate=args.drop_path,
+        drop_block_rate=args.drop_block,
+        global_pool=args.gp,
         bn_tf=args.bn_tf,
         bn_momentum=args.bn_momentum,
         bn_eps=args.bn_eps)
@@ -265,7 +340,7 @@ def create_model(args, model_name, output_dim):
 def init_ddp():
     # use InfiniBand
     os.environ['NCCL_DEBUG'] = 'INFO'
-    os.environ['NCCL_SOCKET_IFNAME'] = 'ib0'
+    os.environ['NCCL_SOCKET_IFNAME'] = 'lo'
 
     # This the global rank: 0, 1, 2, ..., 15
     global_rank = int(os.environ['RANK'])
@@ -276,7 +351,8 @@ def init_ddp():
     print("world_size = %d" % world_size)
 
     # initialize the process group
-    dist.init_process_group(backend="nccl", rank=global_rank, world_size=world_size)
+    # dist.init_process_group(backend="nccl", rank=global_rank, world_size=world_size)
+    dist.init_process_group(backend="nccl", init_method="env://")
 
     local_rank = args.local_rank
     print(f"Running basic DDP example on local rank {local_rank}.")
@@ -289,15 +365,17 @@ def get_ddp_model(model, local_rank):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PyTorch DDP Demo")
-    parser.add_argument("--local_rank", type=int, default=0)
+    args = add_args(parser)
+    # parser.add_argument("--local_rank", type=int, default=0)
     args = parser.parse_args()
     logging.info(args)
-    args.weight_decay = args.wd
-
+    # args.weight_decay = args.wd
+    args.wd = args.weight_decay
 
     # DDP
     local_rank, global_rank = init_ddp()
     process_id = global_rank
+    args.rank = global_rank
 
     # customize the process name
     str_process_name = "ddp_classification:" + str(process_id)
@@ -348,6 +426,7 @@ if __name__ == "__main__":
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
+    model = model.to(device)
     model = get_ddp_model(model, local_rank)
     if global_rank == 0:
         print(model)
@@ -356,10 +435,11 @@ if __name__ == "__main__":
     train_tracker = RuntimeTracker(things_to_track=metrics.metric_names)
     test_tracker = RuntimeTracker(things_to_track=metrics.metric_names)
 
-    model_trainer = ClassificationTrainer(model)
+    model_trainer = ClassificationTrainer(model, device, args)
     for epoch in range(args.epochs):
-        model_trainer.train_one_epoch(train_data_global)
-        model_trainer.test(test_data_global, metrics, test_tracker)
-        wandb_log(prefix='Test', sp_values=test_tracker(), com_values={"epoch": epoch})
+        model_trainer.train_one_epoch(train_data_global, device, args, epoch)
+        model_trainer.test(test_data_global, device, args, metrics, test_tracker)
+        if global_rank == 0:
+            wandb_log(prefix='Test', sp_values=test_tracker(), com_values={"epoch": epoch})
 
     dist.destroy_process_group()
