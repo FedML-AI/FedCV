@@ -1,7 +1,7 @@
 import logging
 
 import torch
-from torch import nn
+import torch.nn as nn
 
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy, JsdCrossEntropy
 from timm.optim import create_optimizer
@@ -75,7 +75,7 @@ class ClassificationTrainer(ModelTrainer):
             x, labels = x.to(device), labels.to(device)
             self.optimizer.zero_grad()
             log_probs = model(x)
-            loss = self.criterion(log_probs, labels)
+            loss = self.train_loss_fn(log_probs, labels)
             loss.backward()
             self.optimizer.step()
             batch_loss.append(loss.item())
@@ -83,7 +83,7 @@ class ClassificationTrainer(ModelTrainer):
                 metric_stat = metrics.evaluate(loss, log_probs, labels)
                 tracker.update_metrics(metric_stat, n_samples=labels.size(0))
             else:
-                raise NotImplementedError
+                pass
             if len(batch_loss) > 0:
                 logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f}'.format(
                     self.id, epoch, batch_idx, sum(batch_loss) / len(batch_loss)))
@@ -105,7 +105,7 @@ class ClassificationTrainer(ModelTrainer):
         x, labels = x.to(device), labels.to(device)
         self.optimizer.zero_grad()
         log_probs = model(x)
-        loss = self.criterion(log_probs, labels)
+        loss = self.train_loss_fn(log_probs, labels)
         loss.backward()
         self.optimizer.step()
         return loss, log_probs, labels

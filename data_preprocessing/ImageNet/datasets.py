@@ -1,8 +1,9 @@
 import os
 import os.path
 
-import torch.utils.data as data
 from PIL import Image
+import torch.utils.data as data
+from timm.data import Dataset, create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 
 
 def has_file_allowed_extension(filename, extensions):
@@ -126,7 +127,7 @@ class ImageNet(data.Dataset):
         if len(all_data) == 0:
             raise (RuntimeError("Found 0 files in subfolders of: " + self.data_dir + "\n"
                                                                                      "Supported extensions are: " + ",".join(
-                extensions)))
+                IMG_EXTENSIONS)))
         return all_data, data_local_num_dict, net_dataidx_map
 
     def __getitem__(self, index):

@@ -5,7 +5,7 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from torch.utils.data.distributed import DistributedSampler
-
+from timm.data import Dataset, create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 
 from .datasets import ImageNet
 from .datasets import ImageNet_truncated
@@ -67,17 +67,8 @@ def _data_transforms_ImageNet():
     return train_transform, valid_transform
 
 
-# for centralized training
-def get_dataloader(dataset, datadir, train_bs, test_bs, dataidxs=None):
-    return get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs)
 
-
-# for local devices
-def get_dataloader_test(dataset, datadir, train_bs, test_bs, dataidxs_train, dataidxs_test):
-    return get_dataloader_test_ImageNet(datadir, train_bs, test_bs, dataidxs_train, dataidxs_test)
-
-
-def get_dataloader_ImageNet_truncated(imagenet_dataset_train, imagenet_dataset_test, train_bs,
+def get_ImageNet_truncated(imagenet_dataset_train, imagenet_dataset_test, train_bs,
                                       test_bs, dataidxs=None, net_dataidx_map=None):
     """
         imagenet_dataset_train, imagenet_dataset_test should be ImageNet or ImageNet_hdf5
@@ -93,52 +84,105 @@ def get_dataloader_ImageNet_truncated(imagenet_dataset_train, imagenet_dataset_t
 
     train_ds = dl_obj(imagenet_dataset_train, dataidxs, net_dataidx_map, train=True, transform=transform_train,
                       download=False)
-    test_ds = dl_obj(imagenet_dataset_test, dataidxs=None, net_dataidx_map=None, train=False, transform=transform_test,
+    test_ds = dl_obj(imagenet_dataset_test, dataidxs, net_dataidx_map, train=False, transform=transform_test,
                      download=False)
+    return train_ds, test_ds
 
-    train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False,
+
+def get_dataloader(dataset_train, dataset_test, train_bs,
+                    test_bs, dataidxs=None, net_dataidx_map=None):
+
+    train_dl = data.DataLoader(dataset=dataset_train, batch_size=train_bs, shuffle=True, drop_last=False,
                         pin_memory=True, num_workers=4)
-    test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False,
-                        pin_memory=True, num_workers=4)
-
-    return train_dl, test_dl
-
-
-def get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs=None):
-    dl_obj = ImageNet
-
-    transform_train, transform_test = _data_transforms_ImageNet()
-
-    train_ds = dl_obj(datadir, dataidxs=dataidxs, train=True, transform=transform_train, download=False)
-    test_ds = dl_obj(datadir, dataidxs=None, train=False, transform=transform_test, download=False)
-
-
-    train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False,
-                        pin_memory=True, num_workers=4)
-    test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False,
+    test_dl = data.DataLoader(dataset=dataset_test, batch_size=test_bs, shuffle=False, drop_last=False,
                         pin_memory=True, num_workers=4)
 
     return train_dl, test_dl
 
 
-def get_dataloader_test_ImageNet(datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None):
-    dl_obj = ImageNet
 
-    transform_train, transform_test = _data_transforms_ImageNet()
+def get_timm_loader(dataset_train, dataset_test, args):
+    """
+        Use for get data loader of timm, for data transforms, augmentations, etc.
+        dataset: self-defined dataset,
+        return: timm loader
+    """
+    logging.info("Using timm dataset and dataloader")
 
-    train_ds = dl_obj(datadir, dataidxs=dataidxs_train, train=True, transform=transform_train, download=True)
-    test_ds = dl_obj(datadir, dataidxs=dataidxs_test, train=False, transform=transform_test, download=True)
+    # TODO not sure whether any problem here
+    data_config = resolve_data_config(vars(args), model=None, verbose=args.rank == 0)
 
-    train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False,
-                        pin_memory=True, num_workers=4)
-    test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False,
-                        pin_memory=True, num_workers=4)
+    # setup augmentation batch splits for contrastive loss or split bn
+    num_aug_splits = 0
+    if args.aug_splits > 0:
+        assert args.aug_splits > 1, 'A split of 1 makes no sense'
+        num_aug_splits = args.aug_splits
 
-    return train_dl, test_dl
+    # wrap dataset in AugMix helper
+    if num_aug_splits > 1:
+        dataset_train = AugMixDataset(dataset_train, num_splits=num_aug_splits)
+
+    # create data loaders w/ augmentation pipeiine
+    train_interpolation = args.train_interpolation
+    if args.no_aug or not train_interpolation:
+        train_interpolation = data_config['interpolation']
+
+    # some args not in the args
+    args.prefetcher = False
+    args.pin_mem = True
+    collate_fn = None
+    args.use_multi_epochs_loader = False
+
+    loader_train = create_loader(
+        dataset_train,
+        input_size=data_config['input_size'],
+        batch_size=args.batch_size,
+        is_training=True,
+        use_prefetcher=args.prefetcher,
+        no_aug=args.no_aug,
+        re_prob=args.reprob,
+        re_mode=args.remode,
+        re_count=args.recount,
+        re_split=args.resplit,
+        scale=args.scale,
+        ratio=args.ratio,
+        hflip=args.hflip,
+        vflip=args.vflip,
+        color_jitter=args.color_jitter,
+        auto_augment=args.aa,
+        num_aug_splits=num_aug_splits,
+        interpolation=train_interpolation,
+        mean=data_config['mean'],
+        std=data_config['std'],
+        num_workers=4,
+        distributed=args.distributed,
+        collate_fn=collate_fn,
+        pin_memory=args.pin_mem,
+        use_multi_epochs_loader=args.use_multi_epochs_loader
+    )
+
+    loader_eval = create_loader(
+        dataset_test,
+        input_size=data_config['input_size'],
+        batch_size=args.validation_batch_size_multiplier * args.batch_size,
+        is_training=False,
+        use_prefetcher=args.prefetcher,
+        interpolation=data_config['interpolation'],
+        mean=data_config['mean'],
+        std=data_config['std'],
+        num_workers=4,
+        distributed=args.distributed,
+        crop_pct=data_config['crop_pct'],
+        pin_memory=args.pin_mem,
+    )
+    return loader_train, loader_eval
+
+
+
 
 
 def distributed_centralized_ImageNet_loader(dataset, data_dir,
-                        world_size, rank, batch_size):
+                        world_size, rank, batch_size, args):
     """
         Used for generating distributed dataloader for 
         accelerating centralized training 
@@ -169,15 +213,19 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
                                 train=False,
                                 transform=transform_test) 
 
-    train_sam = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
-    # test_sam = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
 
-    train_dl = data.DataLoader(train_dataset, batch_size=train_bs, sampler=train_sam,
-                        pin_memory=True, num_workers=4)
-    # test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=test_sam,
-    #                     pin_memory=True, num_workers=4)
-    test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=None,
-                        pin_memory=True, num_workers=4)
+    if args.if_timm_dataset:
+        train_dl, test_dl = get_timm_loader(train_dataset, test_dataset, args)
+    else:
+        train_sam = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
+        # test_sam = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
+
+        train_dl = data.DataLoader(train_dataset, batch_size=train_bs, sampler=train_sam,
+                            pin_memory=True, num_workers=4)
+        # test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=test_sam,
+        #                     pin_memory=True, num_workers=4)
+        test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=None,
+                            pin_memory=True, num_workers=4)
 
     class_num = 1000
 
@@ -188,8 +236,8 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
            None, None, None, class_num
 
 
-def load_partition_data_ImageNet(dataset, data_dir,
-                                 partition_method=None, partition_alpha=None, client_number=100, batch_size=10):
+def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, partition_alpha=None, 
+                                    client_number=100, batch_size=10, args=None):
 
     if dataset == 'ILSVRC2012':
         train_dataset = ImageNet(data_dir=data_dir,
@@ -219,11 +267,12 @@ def load_partition_data_ImageNet(dataset, data_dir,
     test_data_num = len(test_dataset)
     class_num_dict = train_dataset.get_data_local_num_dict()
 
-    # train_data_global, test_data_global = get_dataloader(dataset, data_dir, batch_size, batch_size)
-
-    train_data_global, test_data_global = get_dataloader_ImageNet_truncated(train_dataset, test_dataset,
-                                                                            train_bs=batch_size, test_bs=batch_size,
-                                                                            dataidxs=None, net_dataidx_map=None, )
+    if args.if_timm_dataset:
+        train_data_global, test_data_global = get_timm_loader(train_dataset, test_dataset, args)
+    else:
+        train_data_global, test_data_global = get_dataloader(train_dataset, test_dataset,
+                                                                                train_bs=batch_size, test_bs=batch_size,
+                                                                                dataidxs=None, net_dataidx_map=None)
 
     logging.info("train_dl_global number = " + str(len(train_data_global)))
     logging.info("test_dl_global number = " + str(len(test_data_global)))
@@ -250,10 +299,16 @@ def load_partition_data_ImageNet(dataset, data_dir,
         # training batch size = 64; algorithms batch size = 32
         # train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size,
         #                                          dataidxs)
-        train_data_local, test_data_local = get_dataloader_ImageNet_truncated(train_dataset, test_dataset,
-                                                                              train_bs=batch_size, test_bs=batch_size,
-                                                                              dataidxs=dataidxs,
-                                                                              net_dataidx_map=net_dataidx_map)
+        train_dataset_local, test_dataset_local = get_ImageNet_truncated(train_dataset, test_dataset,
+                                                                        train_bs=batch_size, test_bs=batch_size,
+                                                                        dataidxs=dataidxs,
+                                                                        net_dataidx_map=net_dataidx_map)
+        if args.if_timm_dataset:
+            train_data_local, test_data_local = get_timm_loader(train_dataset_local, test_dataset_local, args)
+        else:
+            train_data_local, test_data_local = get_dataloader(train_dataset_local, test_dataset_local,
+                                                                train_bs=batch_size, test_bs=batch_size,
+                                                                dataidxs=None, net_dataidx_map=None)
 
         # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
         # client_idx, len(train_data_local), len(test_data_local)))
