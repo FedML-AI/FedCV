@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
+from timm.data import Dataset, create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 
 from .datasets import Landmarks
 
@@ -132,7 +133,7 @@ def get_mapping_per_user(fn):
     mapping_table = _read_csv(fn)
     expected_cols = ['user_id', 'image_id', 'class']
     if not all(col in mapping_table[0].keys() for col in expected_cols):
-        logger.error('%s has wrong format.', mapping_file)
+        logger.error('%s has wrong format.', fn)
         raise ValueError(
             'The mapping file must contain user_id, image_id and class columns. '
             'The existing columns are %s' % ','.join(mapping_table[0].keys()))
@@ -161,46 +162,115 @@ def get_mapping_per_user(fn):
     return data_files, data_local_num_dict, net_dataidx_map
 
 
-# for centralized training
-def get_dataloader(dataset, datadir, train_files, test_files, train_bs, test_bs, dataidxs=None):
-    return get_dataloader_Landmarks(datadir, train_files, test_files, train_bs, test_bs, dataidxs)
+# # for centralized training
+# def get_dataloader(dataset, datadir, train_files, test_files, train_bs, test_bs, dataidxs=None):
+#     return get_dataloader_Landmarks(datadir, train_files, test_files, train_bs, test_bs, dataidxs)
 
+def get_dataloader(dataset_train, dataset_test, train_bs,
+                    test_bs, dataidxs=None):
 
-# for local devices
-def get_dataloader_test(dataset, datadir, train_files, test_files, train_bs, test_bs, dataidxs_train, dataidxs_test):
-    return get_dataloader_test_Landmarks(datadir, train_files, test_files, train_bs, test_bs, dataidxs_train, dataidxs_test)
-
-
-def get_dataloader_Landmarks(datadir, train_files, test_files, train_bs, test_bs, dataidxs=None):
-    dl_obj = Landmarks
-
-    transform_train, transform_test = _data_transforms_landmarks()
-
-    train_ds = dl_obj(datadir, train_files, dataidxs=dataidxs, train=True, transform=transform_train, download=True)
-    test_ds = dl_obj(datadir, test_files, dataidxs=None, train=False, transform=transform_test, download=True)
-
-    train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False)
-    test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False)
+    train_dl = data.DataLoader(dataset=dataset_train, batch_size=train_bs, shuffle=True, drop_last=False,
+                        pin_memory=True, num_workers=4)
+    test_dl = data.DataLoader(dataset=dataset_test, batch_size=test_bs, shuffle=False, drop_last=False,
+                        pin_memory=True, num_workers=4)
 
     return train_dl, test_dl
 
 
-def get_dataloader_test_Landmarks(datadir, train_files, test_files, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None):
-    dl_obj = Landmarks
+# def get_dataloader_Landmarks(datadir, train_files, test_files, train_bs, test_bs, dataidxs=None):
+#     dl_obj = Landmarks
 
-    transform_train, transform_test = _data_transforms_landmarks()
+#     transform_train, transform_test = _data_transforms_landmarks()
 
-    train_ds = dl_obj(datadir, train_files, dataidxs=dataidxs_train, train=True, transform=transform_train, download=True)
-    test_ds = dl_obj(datadir, test_files, dataidxs=dataidxs_test, train=False, transform=transform_test, download=True)
+#     train_ds = dl_obj(datadir, train_files, dataidxs=dataidxs, train=True, transform=transform_train, download=True)
+#     test_ds = dl_obj(datadir, test_files, dataidxs=dataidxs, train=False, transform=transform_test, download=True)
 
-    train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False)
-    test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False)
+#     train_dl = data.DataLoader(dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=False)
+#     test_dl = data.DataLoader(dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=False)
 
-    return train_dl, test_dl
+#     return train_dl, test_dl
+
+
+def get_timm_loader(dataset_train, dataset_test, args):
+    """
+        Use for get data loader of timm, for data transforms, augmentations, etc.
+        dataset: self-defined dataset,
+        return: timm loader
+    """
+    logging.info("Using timm dataset and dataloader")
+
+    # TODO not sure whether any problem here
+    data_config = resolve_data_config(vars(args), model=None, verbose=args.rank == 0)
+
+    # setup augmentation batch splits for contrastive loss or split bn
+    num_aug_splits = 0
+    if args.aug_splits > 0:
+        assert args.aug_splits > 1, 'A split of 1 makes no sense'
+        num_aug_splits = args.aug_splits
+
+    # wrap dataset in AugMix helper
+    if num_aug_splits > 1:
+        dataset_train = AugMixDataset(dataset_train, num_splits=num_aug_splits)
+
+    # create data loaders w/ augmentation pipeiine
+    train_interpolation = args.train_interpolation
+    if args.no_aug or not train_interpolation:
+        train_interpolation = data_config['interpolation']
+
+    # some args not in the args
+    args.prefetcher = False
+    args.pin_mem = True
+    collate_fn = None
+    args.use_multi_epochs_loader = False
+
+    loader_train = create_loader(
+        dataset_train,
+        input_size=data_config['input_size'],
+        batch_size=args.batch_size,
+        is_training=True,
+        use_prefetcher=args.prefetcher,
+        no_aug=args.no_aug,
+        re_prob=args.reprob,
+        re_mode=args.remode,
+        re_count=args.recount,
+        re_split=args.resplit,
+        scale=args.scale,
+        ratio=args.ratio,
+        hflip=args.hflip,
+        vflip=args.vflip,
+        color_jitter=args.color_jitter,
+        auto_augment=args.aa,
+        num_aug_splits=num_aug_splits,
+        interpolation=train_interpolation,
+        mean=data_config['mean'],
+        std=data_config['std'],
+        num_workers=4,
+        distributed=args.distributed,
+        collate_fn=collate_fn,
+        pin_memory=args.pin_mem,
+        use_multi_epochs_loader=args.use_multi_epochs_loader
+    )
+
+    loader_eval = create_loader(
+        dataset_test,
+        input_size=data_config['input_size'],
+        batch_size=args.validation_batch_size_multiplier * args.batch_size,
+        is_training=False,
+        use_prefetcher=args.prefetcher,
+        interpolation=data_config['interpolation'],
+        mean=data_config['mean'],
+        std=data_config['std'],
+        num_workers=4,
+        distributed=args.distributed,
+        crop_pct=data_config['crop_pct'],
+        pin_memory=args.pin_mem,
+    )
+    return loader_train, loader_eval
+
 
 
 def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_test_map_file, 
-                            partition_method=None, partition_alpha=None, client_number=233, batch_size=10):
+                            partition_method=None, partition_alpha=None, client_number=233, batch_size=10, args=None):
 
     train_files, data_local_num_dict, net_dataidx_map = get_mapping_per_user(fed_train_map_file)
     test_files = _read_csv(fed_test_map_file)
@@ -209,7 +279,21 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
     # logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     train_data_num = len(train_files)
 
-    train_data_global, test_data_global = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size)
+
+    transform_train, transform_test = _data_transforms_landmarks()
+
+    train_dataset = Landmarks(data_dir, train_files, dataidxs=None, train=True, transform=transform_train, download=True)
+    test_dataset = Landmarks(data_dir, test_files, dataidxs=None, train=False, transform=transform_test, download=True)
+
+
+    if args.if_timm_dataset:
+        train_data_global, test_data_global = get_timm_loader(train_dataset, test_dataset, args)
+    else:
+        train_data_global, test_data_global = get_dataloader(train_dataset, test_dataset,
+                                                            train_bs=batch_size, test_bs=batch_size)
+
+
+    # train_data_global, test_data_global = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size)
     # logging.info("train_dl_global number = " + str(len(train_data_global)))
     # logging.info("test_dl_global number = " + str(len(test_data_global)))
     test_data_num = len(test_files)
@@ -228,8 +312,17 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
         # logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
 
         # training batch size = 64; algorithms batch size = 32
-        train_data_local, test_data_local = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size,
-                                                 dataidxs)
+        # train_data_local, test_data_local = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size)
+
+
+        train_dataset_local = Landmarks(data_dir, train_files, dataidxs=dataidxs, train=True, transform=transform_train, download=True)
+        test_dataset_local = Landmarks(data_dir, test_files, dataidxs=None, train=False, transform=transform_test, download=True)
+        if args.if_timm_dataset:
+            train_data_local, test_data_local = get_timm_loader(train_dataset_local, test_dataset_local, args)
+        else:
+            train_data_local, test_data_local = get_dataloader(train_dataset_local, test_dataset_local,
+                                                                train_bs=batch_size, test_bs=batch_size)
+
         # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
         #     client_idx, len(train_data_local), len(test_data_local)))
         train_data_local_dict[client_idx] = train_data_local

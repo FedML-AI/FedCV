@@ -239,22 +239,27 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
 def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, partition_alpha=None, 
                                     client_number=100, batch_size=10, args=None):
 
+    transform_train, transform_test = _data_transforms_ImageNet()
     if dataset == 'ILSVRC2012':
         train_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
-                                train=True)
+                                train=True,
+                                transform=transform_train) 
 
         test_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
-                                train=False)
+                                train=False,
+                                transform=transform_test) 
     elif dataset == 'ILSVRC2012_hdf5':
         train_dataset = ImageNet_hdf5(data_dir=data_dir,
                                 dataidxs=None,
-                                train=True)
+                                train=True,
+                                transform=transform_train) 
 
         test_dataset = ImageNet_hdf5(data_dir=data_dir,
                                 dataidxs=None,
-                                train=False)
+                                train=False,
+                                transform=transform_test) 
 
 
     net_dataidx_map = train_dataset.get_net_dataidx_map()

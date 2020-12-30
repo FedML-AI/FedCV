@@ -17,7 +17,7 @@ import torch.distributed as dist
 import torch.nn as nn
 from torch.nn.parallel import DistributedDataParallel as DDP
 from timm import create_model as timm_create_model
-from timm.models import create_model, resume_checkpoint, load_checkpoint, convert_splitbn_model
+from timm.models import resume_checkpoint, load_checkpoint, convert_splitbn_model
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
@@ -267,8 +267,10 @@ def load_data(args, dataset_name):
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 233
-        fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_train.csv')
-        fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_test.csv')
+        # fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_train.csv')
+        # fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld23k_user_dict_test.csv')
+        fed_train_map_file = os.path.join(args.data_dir, 'gld23k_user_dict_train.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'gld23k_user_dict_test.csv')
         args.data_dir = os.path.join(args.data_dir, 'images')
 
         train_data_num, test_data_num, train_data_global, test_data_global, \
@@ -277,14 +279,17 @@ def load_data(args, dataset_name):
                                                   fed_train_map_file=fed_train_map_file,
                                                   fed_test_map_file=fed_test_map_file,
                                                   partition_method=None, partition_alpha=None,
-                                                  client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                  client_number=233, batch_size=args.batch_size)
 
     elif dataset_name == "gld160k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 1262
-        fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_train.csv')
-        fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_test.csv')
+        # fed_train_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_train.csv')
+        # fed_test_map_file = os.path.join(args.data_dir, 'data_user_dict/gld160k_user_dict_test.csv')
+        fed_train_map_file = os.path.join(args.data_dir, 'gld160k_user_dict_train.csv')
+        fed_test_map_file = os.path.join(args.data_dir, 'gld160k_user_dict_test.csv')
         args.data_dir = os.path.join(args.data_dir, 'images')
+
 
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
