@@ -443,8 +443,11 @@ if __name__ == "__main__":
     model_trainer = ClassificationTrainer(model, device, args)
     for epoch in range(args.epochs):
         model_trainer.train_one_epoch(train_data_global, device, args, epoch)
-        model_trainer.test(test_data_global, device, args, metrics, test_tracker)
         if global_rank == 0:
+            model_trainer.test(test_data_global, device, args, metrics, test_tracker)
             wandb_log(prefix='Test', sp_values=test_tracker(), com_values={"epoch": epoch})
+
+        # I forget to reset the tracker previously
+        test_tracker.reset()
 
     dist.destroy_process_group()
