@@ -34,20 +34,35 @@ EfficientNet-B0 with RandAugment
 
 
 ```
+./single_run_classification.sh "0"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.003"
+
+./single_run_classification.sh "1"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.03"
+
+
+./single_run_classification.sh "2"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.02"
+
+
+./single_run_classification.sh "3"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.005"
+
+
 ./single_run_classification.sh "0"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr .048"
 
 ./single_run_classification.sh "1"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr .1"
 
-./single_run_classification.sh "2"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.02"
 
-./single_run_classification.sh "3"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.005"
 
 ```
 
 
 MobileNetV3-Large-100
 ```
-./single_run_classification.sh "0"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 600 --decay-epochs 2.4 --decay-rate .973 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr .064 --lr-noise 0.42 0.9"
+./single_run_classification.sh "2"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 600 --decay-epochs 2.4 --decay-rate .973 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr .048 --lr-noise 0.42 0.9"
+
+
+
+./single_run_classification.sh "3"  ~/py36/bin/python " --dataset gld160k --data_dir /home/datasets/landmarks --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 600 --decay-epochs 2.4 --decay-rate .973 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr .064 --lr-noise 0.42 0.9"
+
+
 ```
 
 

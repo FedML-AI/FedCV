@@ -129,14 +129,14 @@ def get_timm_loader(dataset_train, dataset_test, args):
 
     # some args not in the args
     args.prefetcher = False
-    args.pin_mem = True
+    args.pin_mem = False
     collate_fn = None
     args.use_multi_epochs_loader = False
 
     loader_train = create_loader(
         dataset_train,
         input_size=data_config['input_size'],
-        batch_size=args.batch_size,
+        batch_size=args.batch_size // args.client_num_in_total,
         is_training=True,
         use_prefetcher=args.prefetcher,
         no_aug=args.no_aug,
@@ -164,7 +164,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
     loader_eval = create_loader(
         dataset_test,
         input_size=data_config['input_size'],
-        batch_size=args.validation_batch_size_multiplier * args.batch_size,
+        batch_size=args.validation_batch_size_multiplier * args.batch_size // args.client_num_in_total,
         is_training=False,
         use_prefetcher=args.prefetcher,
         interpolation=data_config['interpolation'],
@@ -220,11 +220,11 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
         train_sam = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
         # test_sam = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
 
-        train_dl = data.DataLoader(train_dataset, batch_size=train_bs, sampler=train_sam,
+        train_dl = data.DataLoader(train_dataset, batch_size=train_bs // world_size, sampler=train_sam,
                             pin_memory=True, num_workers=4)
         # test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=test_sam,
         #                     pin_memory=True, num_workers=4)
-        test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=None,
+        test_dl = data.DataLoader(test_dataset, batch_size=test_bs // world_size, sampler=None,
                             pin_memory=True, num_workers=4)
 
     class_num = 1000

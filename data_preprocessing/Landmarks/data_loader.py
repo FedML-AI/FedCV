@@ -219,14 +219,14 @@ def get_timm_loader(dataset_train, dataset_test, args):
 
     # some args not in the args
     args.prefetcher = False
-    args.pin_mem = True
+    args.pin_mem = False
     collate_fn = None
     args.use_multi_epochs_loader = False
 
     loader_train = create_loader(
         dataset_train,
         input_size=data_config['input_size'],
-        batch_size=args.batch_size,
+        batch_size=args.batch_size / args.client_num_in_total,
         is_training=True,
         use_prefetcher=args.prefetcher,
         no_aug=args.no_aug,
@@ -254,7 +254,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
     loader_eval = create_loader(
         dataset_test,
         input_size=data_config['input_size'],
-        batch_size=args.validation_batch_size_multiplier * args.batch_size,
+        batch_size=args.validation_batch_size_multiplier * args.batch_size / args.client_num_in_total,
         is_training=False,
         use_prefetcher=args.prefetcher,
         interpolation=data_config['interpolation'],
