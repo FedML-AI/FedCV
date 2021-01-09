@@ -41,12 +41,18 @@ class Cutout(object):
         return img
 
 
-def _data_transforms_ImageNet():
+def _data_transforms_ImageNet(args):
     # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
     # IMAGENET_STD = [0.2673, 0.2564, 0.2762]
+    if args.data_transform == 'FLTransform':
+        IMAGENET_MEAN = [0.5, 0.5, 0.5]
+        IMAGENET_STD = [0.5, 0.5, 0.5]
+    elif args.data_transform == 'NormalTransform':
+        IMAGENET_MEAN = [0.485, 0.456, 0.406]
+        IMAGENET_STD = [0.229, 0.224, 0.225]
+    else:
+        raise NotImplementedError
 
-    IMAGENET_MEAN = [0.485, 0.456, 0.406]
-    IMAGENET_STD = [0.229, 0.224, 0.225]
 
     image_size = 224
     train_transform = transforms.Compose([
@@ -70,7 +76,7 @@ def _data_transforms_ImageNet():
 
 
 def get_ImageNet_truncated(imagenet_dataset_train, imagenet_dataset_test, train_bs,
-                                      test_bs, dataidxs=None, net_dataidx_map=None):
+                                      test_bs, dataidxs=None, net_dataidx_map=None, args=None):
     """
         imagenet_dataset_train, imagenet_dataset_test should be ImageNet or ImageNet_hdf5
     """
@@ -81,7 +87,7 @@ def get_ImageNet_truncated(imagenet_dataset_train, imagenet_dataset_test, train_
     else:
         raise NotImplementedError()
 
-    transform_train, transform_test = _data_transforms_ImageNet()
+    transform_train, transform_test = _data_transforms_ImageNet(args)
 
     train_ds = dl_obj(imagenet_dataset_train, dataidxs, net_dataidx_map, train=True, transform=transform_train,
                       download=False)
@@ -94,9 +100,9 @@ def get_dataloader(dataset_train, dataset_test, train_bs,
                     test_bs, dataidxs=None, net_dataidx_map=None):
 
     train_dl = data.DataLoader(dataset=dataset_train, batch_size=train_bs, shuffle=True, drop_last=False,
-                        pin_memory=True, num_workers=4)
+                        pin_memory=True, num_workers=args.data_load_num_workers)
     test_dl = data.DataLoader(dataset=dataset_test, batch_size=test_bs, shuffle=False, drop_last=False,
-                        pin_memory=True, num_workers=4)
+                        pin_memory=True, num_workers=args.data_load_num_workers)
 
     return train_dl, test_dl
 
@@ -134,6 +140,15 @@ def get_timm_loader(dataset_train, dataset_test, args):
     collate_fn = None
     args.use_multi_epochs_loader = False
 
+    if args.data_transform == 'FLTransform':
+        data_config['mean'] = [0.5, 0.5, 0.5]
+        data_config['std'] = [0.5, 0.5, 0.5]
+    elif args.data_transform == 'NormalTransform':
+        pass 
+        # data_config['mean'] = 
+        # data_config['std'] = 
+    else:
+        raise NotImplementedError
 
     logging.info("data transform, MEAN: {}, STD: {}.".format(
         data_config['mean'], data_config['std']))
@@ -158,7 +173,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
         interpolation=train_interpolation,
         mean=data_config['mean'],
         std=data_config['std'],
-        num_workers=4,
+        num_workers=args.data_load_num_workers,
         distributed=args.distributed,
         collate_fn=collate_fn,
         pin_memory=args.pin_mem,
@@ -174,7 +189,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
         interpolation=data_config['interpolation'],
         mean=data_config['mean'],
         std=data_config['std'],
-        num_workers=4,
+        num_workers=args.data_load_num_workers,
         distributed=args.distributed,
         crop_pct=data_config['crop_pct'],
         pin_memory=args.pin_mem,
@@ -192,7 +207,7 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
     train_bs=batch_size
     test_bs=batch_size
 
-    transform_train, transform_test = _data_transforms_ImageNet()
+    transform_train, transform_test = _data_transforms_ImageNet(args)
     if dataset == 'ILSVRC2012':
         train_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
@@ -237,11 +252,10 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
         # test_sam = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
 
         train_dl = data.DataLoader(train_dataset, batch_size=train_bs // world_size, sampler=train_sam,
-                            pin_memory=True, num_workers=4)
-        # test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=test_sam,
-        #                     pin_memory=True, num_workers=4)
+                            pin_memory=True, num_workers=args.data_load_num_workers)
+
         test_dl = data.DataLoader(test_dataset, batch_size=test_bs // world_size, sampler=None,
-                            pin_memory=True, num_workers=4)
+                            pin_memory=True, num_workers=args.data_load_num_workers)
 
     train_data_num = len(train_dataset)
     test_data_num = len(test_dataset)
@@ -253,7 +267,7 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
 def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, partition_alpha=None, 
                                     client_number=100, batch_size=10, args=None):
 
-    transform_train, transform_test = _data_transforms_ImageNet()
+    transform_train, transform_test = _data_transforms_ImageNet(args)
     if dataset == 'ILSVRC2012':
         train_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
@@ -342,7 +356,7 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
         train_dataset_local, test_dataset_local = get_ImageNet_truncated(train_dataset, test_dataset,
                                                                         train_bs=batch_size, test_bs=batch_size,
                                                                         dataidxs=dataidxs,
-                                                                        net_dataidx_map=net_dataidx_map)
+                                                                        net_dataidx_map=net_dataidx_map, args=args)
         if args.if_timm_dataset:
             train_data_local, test_data_local = get_timm_loader(train_dataset_local, test_dataset_local, args)
         else:

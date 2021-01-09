@@ -29,47 +29,7 @@ def _read_csv(path: str):
   with open(path, 'r') as f:
     return list(csv.DictReader(f))
 
-# class Cutout(object):
-#     def __init__(self, length):
-#         self.length = length
 
-#     def __call__(self, img):
-#         h, w = img.size(1), img.size(2)
-#         mask = np.ones((h, w), np.float32)
-#         y = np.random.randint(h)
-#         x = np.random.randint(w)
-
-#         y1 = np.clip(y - self.length // 2, 0, h)
-#         y2 = np.clip(y + self.length // 2, 0, h)
-#         x1 = np.clip(x - self.length // 2, 0, w)
-#         x2 = np.clip(x + self.length // 2, 0, w)
-
-#         mask[y1: y2, x1: x2] = 0.
-#         mask = torch.from_numpy(mask)
-#         mask = mask.expand_as(img)
-#         img *= mask
-#         return img
-
-# def _data_transforms_landmarks():
-#     landmarks_MEAN = [0.5071, 0.4865, 0.4409]
-#     landmarks_STD = [0.2673, 0.2564, 0.2762]
-
-#     train_transform = transforms.Compose([
-#         transforms.ToPILImage(),
-#         transforms.RandomCrop(32, padding=4),
-#         transforms.RandomHorizontalFlip(),
-#         transforms.ToTensor(),
-#         transforms.Normalize(landmarks_MEAN, landmarks_STD),
-#     ])
-
-#     train_transform.transforms.append(Cutout(16))
-
-#     valid_transform = transforms.Compose([
-#         transforms.ToTensor(),
-#         transforms.Normalize(landmarks_MEAN, landmarks_STD),
-#     ])
-
-#     return train_transform, valid_transform
 
 class Cutout(object):
     def __init__(self, length):
@@ -93,12 +53,16 @@ class Cutout(object):
         return img
 
 
-def _data_transforms_landmarks():
-    # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
-    # IMAGENET_STD = [0.2673, 0.2564, 0.2762]
+def _data_transforms_landmarks(args):
 
-    IMAGENET_MEAN = [0.5, 0.5, 0.5]
-    IMAGENET_STD = [0.5, 0.5, 0.5]
+    if args.data_transform == 'FLTransform':
+        IMAGENET_MEAN = [0.5, 0.5, 0.5]
+        IMAGENET_STD = [0.5, 0.5, 0.5]
+    elif args.data_transform == 'NormalTransform':
+        IMAGENET_MEAN = [0.485, 0.456, 0.406]
+        IMAGENET_STD = [0.229, 0.224, 0.225]
+    else:
+        raise NotImplementedError
 
     image_size = 224
     train_transform = transforms.Compose([
@@ -170,9 +134,9 @@ def get_dataloader(dataset_train, dataset_test, train_bs,
                     test_bs, dataidxs=None):
 
     train_dl = data.DataLoader(dataset=dataset_train, batch_size=train_bs, shuffle=True, drop_last=False,
-                        pin_memory=True, num_workers=4)
+                        pin_memory=True, num_workers=args.data_load_num_workers)
     test_dl = data.DataLoader(dataset=dataset_test, batch_size=test_bs, shuffle=False, drop_last=False,
-                        pin_memory=True, num_workers=4)
+                        pin_memory=True, num_workers=args.data_load_num_workers)
 
     return train_dl, test_dl
 
@@ -223,6 +187,18 @@ def get_timm_loader(dataset_train, dataset_test, args):
     collate_fn = None
     args.use_multi_epochs_loader = False
 
+    if args.data_transform == 'FLTransform':
+        data_config['mean'] = [0.5, 0.5, 0.5]
+        data_config['std'] = [0.5, 0.5, 0.5]
+    elif args.data_transform == 'NormalTransform':
+        pass 
+        # data_config['mean'] = 
+        # data_config['std'] = 
+    else:
+        raise NotImplementedError
+
+    logging.info("data transform, MEAN: {}, STD: {}.".format(
+        data_config['mean'], data_config['std']))
     loader_train = create_loader(
         dataset_train,
         input_size=data_config['input_size'],
@@ -244,7 +220,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
         interpolation=train_interpolation,
         mean=data_config['mean'],
         std=data_config['std'],
-        num_workers=4,
+        num_workers=args.data_load_num_workers,
         distributed=args.distributed,
         collate_fn=collate_fn,
         pin_memory=args.pin_mem,
@@ -260,7 +236,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
         interpolation=data_config['interpolation'],
         mean=data_config['mean'],
         std=data_config['std'],
-        num_workers=4,
+        num_workers=args.data_load_num_workers,
         distributed=args.distributed,
         crop_pct=data_config['crop_pct'],
         pin_memory=args.pin_mem,
@@ -280,7 +256,7 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
     train_data_num = len(train_files)
 
 
-    transform_train, transform_test = _data_transforms_landmarks()
+    transform_train, transform_test = _data_transforms_landmarks(args)
 
     train_dataset = Landmarks(data_dir, train_files, dataidxs=None, train=True, transform=transform_train, download=True)
     test_dataset = Landmarks(data_dir, test_files, dataidxs=None, train=False, transform=transform_test, download=True)

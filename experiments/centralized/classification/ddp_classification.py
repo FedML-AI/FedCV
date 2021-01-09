@@ -27,7 +27,7 @@ from utils.metrics import Metrics
 from utils.wandb_util import wandb_log
 from data_preprocessing.ImageNet.data_loader import distributed_centralized_ImageNet_loader
 from data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
-from training.classification_trainer import ClassificationTrainer
+from training.centralized_classification_trainer import ClassificationTrainer
 
 
 
@@ -102,6 +102,8 @@ def add_args(parser):
     parser.add_argument('--if-timm-dataset', action='store_true', default=False,
                         help='If use timm dataset augmentation')
 
+    parser.add_argument('--data_load_num_workers', type=int, default=4,
+                        help='number of workers when loading data')
 
 
     # Dataset
@@ -109,6 +111,8 @@ def add_args(parser):
                         help='Image patch size (default: None => model default)')
     parser.add_argument('--crop-pct', default=None, type=float,
                         metavar='N', help='Input image center crop percent (for validation only)')
+    parser.add_argument('--data-transform', default=None, type=str, metavar='TRANSFORM',
+                        help='How to do data transform')
     parser.add_argument('--mean', type=float, nargs='+', default=None, metavar='MEAN',
                         help='Override mean pixel value of dataset')
     parser.add_argument('--std', type=float, nargs='+', default=None, metavar='STD',
@@ -402,6 +406,8 @@ if __name__ == "__main__":
                 ", process ID = " + str(os.getpid()) +
                 ", process Name = " + str(psutil.Process(os.getpid())))
 
+
+    name_model_ema = "-model_ema" if args.model_ema else "-no_model_ema"
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
         wandb.init(
@@ -409,7 +415,8 @@ if __name__ == "__main__":
             project="fedcv-classification",
             name="FedCV (c new)" + str(args.partition_method) + "-" +str(args.dataset)+
                 "-e" + str(args.epochs) + "-" + str(args.model) + "-" +
-                str(args.client_optimizer) + "-bs" + str(args.batch_size) +
+                args.data_transform + "-aa" + args.aa + "-" + str(args.opt) + 
+                name_model_ema + "-bs" + str(args.batch_size) +
                 "-lr" + str(args.lr) + "-wd" + str(args.wd),
             config=args
         )
@@ -443,8 +450,9 @@ if __name__ == "__main__":
     model_trainer = ClassificationTrainer(model, device, args)
     for epoch in range(args.epochs):
         model_trainer.train_one_epoch(train_data_global, device, args, epoch)
-        model_trainer.test(test_data_global, device, args, metrics, test_tracker)
         if global_rank == 0:
+            model_trainer.test(test_data_global, device, args, metrics, test_tracker)
             wandb_log(prefix='Test', sp_values=test_tracker(), com_values={"epoch": epoch})
+        # I forget to reset the tracker previously
         test_tracker.reset()
     dist.destroy_process_group()
