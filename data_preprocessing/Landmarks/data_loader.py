@@ -187,6 +187,9 @@ def get_timm_loader(dataset_train, dataset_test, args):
     collate_fn = None
     args.use_multi_epochs_loader = False
 
+    train_batch_size = args.batch_size
+    test_batch_size = args.batch_size // 4
+
     if args.data_transform == 'FLTransform':
         data_config['mean'] = [0.5, 0.5, 0.5]
         data_config['std'] = [0.5, 0.5, 0.5]
@@ -202,7 +205,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
     loader_train = create_loader(
         dataset_train,
         input_size=data_config['input_size'],
-        batch_size=args.batch_size / args.client_num_in_total,
+        batch_size=train_batch_size,
         is_training=True,
         use_prefetcher=args.prefetcher,
         no_aug=args.no_aug,
@@ -230,7 +233,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
     loader_eval = create_loader(
         dataset_test,
         input_size=data_config['input_size'],
-        batch_size=args.validation_batch_size_multiplier * args.batch_size / args.client_num_in_total,
+        batch_size=test_batch_size,
         is_training=False,
         use_prefetcher=args.prefetcher,
         interpolation=data_config['interpolation'],

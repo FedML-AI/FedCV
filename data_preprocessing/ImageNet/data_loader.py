@@ -140,6 +140,9 @@ def get_timm_loader(dataset_train, dataset_test, args):
     collate_fn = None
     args.use_multi_epochs_loader = False
 
+    train_batch_size = args.batch_size
+    test_batch_size = args.batch_size // 4
+
     if args.data_transform == 'FLTransform':
         data_config['mean'] = [0.5, 0.5, 0.5]
         data_config['std'] = [0.5, 0.5, 0.5]
@@ -155,7 +158,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
     loader_train = create_loader(
         dataset_train,
         input_size=data_config['input_size'],
-        batch_size=args.batch_size // args.client_num_in_total,
+        batch_size=train_batch_size,
         is_training=True,
         use_prefetcher=args.prefetcher,
         no_aug=args.no_aug,
@@ -183,7 +186,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
     loader_eval = create_loader(
         dataset_test,
         input_size=data_config['input_size'],
-        batch_size=args.validation_batch_size_multiplier * args.batch_size // args.client_num_in_total,
+        batch_size=test_batch_size,
         is_training=False,
         use_prefetcher=args.prefetcher,
         interpolation=data_config['interpolation'],
@@ -251,10 +254,10 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
         train_sam = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
         # test_sam = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
 
-        train_dl = data.DataLoader(train_dataset, batch_size=train_bs // world_size, sampler=train_sam,
+        train_dl = data.DataLoader(train_dataset, batch_size=train_bs , sampler=train_sam,
                             pin_memory=True, num_workers=args.data_load_num_workers)
 
-        test_dl = data.DataLoader(test_dataset, batch_size=test_bs // world_size, sampler=None,
+        test_dl = data.DataLoader(test_dataset, batch_size=test_bs, sampler=None,
                             pin_memory=True, num_workers=args.data_load_num_workers)
 
     train_data_num = len(train_dataset)

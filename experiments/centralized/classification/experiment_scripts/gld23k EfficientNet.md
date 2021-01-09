@@ -6,8 +6,8 @@ imagenet_data_dir=/nfs_home/datasets/ILSVRC2012
 gld_data_dir=/nfs_home/datasets/landmarks
 cifar10_data_dir=/nfs_home/datasets/cifar10
 mnist_data_dir=/nfs_home/datasets/mnist
-MPI_HOST_FILE=hostfiles/t716_hostfile
-GPU_UTIL_FILE=gpuutils/t716_gpu_util.yaml
+
+
 
 ## Pure
 
