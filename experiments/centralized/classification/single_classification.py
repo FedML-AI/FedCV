@@ -108,7 +108,7 @@ def add_args(parser):
                         help='Image patch size (default: None => model default)')
     parser.add_argument('--crop-pct', default=None, type=float,
                         metavar='N', help='Input image center crop percent (for validation only)')
-    parser.add_argument('--data-transform', default=None, type=str, metavar='TRANSFORM',
+    parser.add_argument('--data_transform', default=None, type=str, metavar='TRANSFORM',
                         help='How to do data transform')
     parser.add_argument('--mean', type=float, nargs='+', default=None, metavar='MEAN',
                         help='Override mean pixel value of dataset')
@@ -376,6 +376,7 @@ if __name__ == "__main__":
 
 
     name_model_ema = "-model_ema" if args.model_ema else "-no_model_ema"
+    name_aa = args.aa if args.aa is not None else "_None"
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
         wandb.init(
@@ -383,7 +384,7 @@ if __name__ == "__main__":
             project="fedcv-classification",
             name="FedCV (c new)" + str(args.partition_method) + "-" +str(args.dataset)+
                 "-e" + str(args.epochs) + "-" + str(args.model) + "-" +
-                args.data_transform + "-aa" + args.aa + "-" + str(args.opt) + 
+                args.data_transform + "-aa" + name_aa + "-" + str(args.opt) + 
                 name_model_ema + "-bs" + str(args.batch_size) +
                 "-lr" + str(args.lr) + "-wd" + str(args.wd),
             config=args
