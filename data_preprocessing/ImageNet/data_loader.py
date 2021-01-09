@@ -8,6 +8,7 @@ from torch.utils.data.distributed import DistributedSampler
 from timm.data import Dataset, create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 
 from .datasets import ImageNet
+from .datasets import ImageNet100
 from .datasets import ImageNet_truncated
 from .datasets_hdf5 import ImageNet_hdf5
 from .datasets_hdf5 import ImageNet_truncated_hdf5
@@ -133,6 +134,9 @@ def get_timm_loader(dataset_train, dataset_test, args):
     collate_fn = None
     args.use_multi_epochs_loader = False
 
+
+    logging.info("data transform, MEAN: {}, STD: {}.".format(
+        data_config['mean'], data_config['std']))
     loader_train = create_loader(
         dataset_train,
         input_size=data_config['input_size'],
@@ -178,9 +182,6 @@ def get_timm_loader(dataset_train, dataset_test, args):
     return loader_train, loader_eval
 
 
-
-
-
 def distributed_centralized_ImageNet_loader(dataset, data_dir,
                         world_size, rank, batch_size, args):
     """
@@ -201,7 +202,19 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
         test_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
                                 train=False,
+                                transform=transform_test)
+        class_num = 1000
+    elif dataset == 'ILSVRC2012-100':
+        train_dataset = ImageNet100(data_dir=data_dir,
+                                dataidxs=None,
+                                train=True,
+                                transform=transform_train) 
+
+        test_dataset = ImageNet100(data_dir=data_dir,
+                                dataidxs=None,
+                                train=False,
                                 transform=transform_test) 
+        class_num = 100
     elif dataset == 'ILSVRC2012_hdf5':
         train_dataset = ImageNet_hdf5(data_dir=data_dir,
                                 dataidxs=None,
@@ -212,6 +225,9 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
                                 dataidxs=None,
                                 train=False,
                                 transform=transform_test) 
+        class_num = 1000
+    else:
+        raise NotImplementedError
 
 
     if args.if_timm_dataset:
@@ -226,8 +242,6 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
         #                     pin_memory=True, num_workers=4)
         test_dl = data.DataLoader(test_dataset, batch_size=test_bs // world_size, sampler=None,
                             pin_memory=True, num_workers=4)
-
-    class_num = 1000
 
     train_data_num = len(train_dataset)
     test_data_num = len(test_dataset)
@@ -249,7 +263,19 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
         test_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
                                 train=False,
+                                transform=transform_test)
+        class_num = 1000
+    elif dataset == 'ILSVRC2012-100':
+        train_dataset = ImageNet100(data_dir=data_dir,
+                                dataidxs=None,
+                                train=True,
+                                transform=transform_train) 
+
+        test_dataset = ImageNet100(data_dir=data_dir,
+                                dataidxs=None,
+                                train=False,
                                 transform=transform_test) 
+        class_num = 100
     elif dataset == 'ILSVRC2012_hdf5':
         train_dataset = ImageNet_hdf5(data_dir=data_dir,
                                 dataidxs=None,
@@ -260,11 +286,12 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
                                 dataidxs=None,
                                 train=False,
                                 transform=transform_test) 
-
+        class_num = 1000
+    else:
+        raise NotImplementedError
 
     net_dataidx_map = train_dataset.get_net_dataidx_map()
 
-    class_num = 1000
 
     # logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     # train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
@@ -289,11 +316,19 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
 
     for client_idx in range(client_number):
         if client_number == 1000:
+            if dataset not in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
+                raise NotImplementedError("Only support 1000 clients for Full ILSVRC2012!")
             dataidxs = client_idx
             data_local_num_dict = class_num_dict
         elif client_number == 100:
-            dataidxs = [client_idx * 10 + i for i in range(10)]
-            data_local_num_dict[client_idx] = sum(class_num_dict[client_idx + i] for i in range(10))
+            if dataset in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
+                dataidxs = [client_idx * 10 + i for i in range(10)]
+                data_local_num_dict[client_idx] = sum(class_num_dict[client_idx + i] for i in range(10))
+            elif dataset in ['ILSVRC2012-100']:
+                dataidxs = client_idx
+                data_local_num_dict = class_num_dict
+            else:
+                raise NotImplementedError
         else:
             raise NotImplementedError("Not support other client_number for now!")
 

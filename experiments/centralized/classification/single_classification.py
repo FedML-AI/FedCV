@@ -252,7 +252,7 @@ def add_args(parser):
 
 
 def load_data(args, dataset_name):
-    if dataset_name == "ILSVRC2012":
+    if dataset_name in ["ILSVRC2012", "ILSVRC2012-100"]:
         logging.info("load_data. dataset_name = %s" % dataset_name)
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
@@ -410,4 +410,5 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         model_trainer.train_one_epoch(train_data_global, device, args, epoch)
         model_trainer.test(test_data_global, device, args, metrics, test_tracker)
+        test_tracker.reset()
         wandb_log(prefix='Test', sp_values=test_tracker(), com_values={"epoch": epoch})
