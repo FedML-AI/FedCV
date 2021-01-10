@@ -26,7 +26,7 @@ from data_preprocessing.ImageNet.data_loader import distributed_centralized_Imag
 from data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
 from training.centralized_classification_trainer import ClassificationTrainer
 
-from fedml_api.utils.logger import (
+from utils.logger import (
     logging_config
 )
 
@@ -410,7 +410,9 @@ if __name__ == "__main__":
 
     model_trainer = ClassificationTrainer(model, device, args)
     for epoch in range(args.epochs):
-        model_trainer.train_one_epoch(train_data_global, device, args, epoch)
-        model_trainer.test(test_data_global, device, args, metrics, test_tracker)
+        model_trainer.train_one_epoch(train_data_global, device, args, epoch, train_tracker, metrics)
+        model_trainer.test(test_data_global, device, args, test_tracker, metrics)
+        train_tracker.reset()
         test_tracker.reset()
         wandb_log(prefix='Test', sp_values=test_tracker(), com_values={"epoch": epoch})
+        wandb_log(prefix='Train', sp_values=train_tracker(), com_values={"epoch": epoch})

@@ -65,13 +65,15 @@ class ClassificationTrainer(ModelTrainer):
             self.lr_scheduler.step(epoch=epoch + 1, metric=None)
 
 
-    def train_one_epoch(self, train_data, device, args, epoch, metrics=None, tracker=None):
+    def train_one_epoch(self, train_data, device, args, epoch, tracker=None, metrics=None):
         model = self.model
 
         model.to(device)
         model.train()
         batch_loss = []
         for batch_idx, (x, labels) in enumerate(train_data):
+            if batch_idx > 3:
+                break
             logging.debug("labels: {}".format(labels))
             x, labels = x.to(device), labels.to(device)
             self.optimizer.zero_grad()
@@ -83,11 +85,13 @@ class ClassificationTrainer(ModelTrainer):
             if (metrics is not None) and (tracker is not None):
                 metric_stat = metrics.evaluate(loss, log_probs, labels)
                 tracker.update_metrics(metric_stat, n_samples=labels.size(0))
+                if len(batch_loss) > 0:
+                    logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f} ACC1:'.format(
+                        self.id, epoch, batch_idx, sum(batch_loss) / len(batch_loss), metric_stat['Acc1']))
             else:
-                pass
-            if len(batch_loss) > 0:
-                logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f}'.format(
-                    self.id, epoch, batch_idx, sum(batch_loss) / len(batch_loss)))
+                if len(batch_loss) > 0:
+                    logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f}'.format(
+                        self.id, epoch, batch_idx, sum(batch_loss) / len(batch_loss)))
         self.lr_scheduler.step(epoch=epoch + 1, metric=None)
 
         if (metrics is not None) and (tracker is not None):
@@ -113,7 +117,7 @@ class ClassificationTrainer(ModelTrainer):
 
 
 
-    def test(self, test_data, device, args, metrics=None, tracker=None):
+    def test(self, test_data, device, args, tracker=None, metrics=None):
         model = self.model
 
         model.eval()
