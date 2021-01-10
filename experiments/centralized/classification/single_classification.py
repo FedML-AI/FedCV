@@ -26,7 +26,9 @@ from data_preprocessing.ImageNet.data_loader import distributed_centralized_Imag
 from data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
 from training.centralized_classification_trainer import ClassificationTrainer
 
-
+from fedml_api.utils.logger import (
+    logging_config
+)
 
 def add_args(parser):
     """
@@ -60,6 +62,7 @@ def add_args(parser):
 
     parser.add_argument('--client_optimizer', type=str, default='adam',
                         help='SGD with momentum; adam')
+
 
     # parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
     #                     help='learning rate (default: 0.001)')
@@ -102,6 +105,10 @@ def add_args(parser):
     parser.add_argument('--data_load_num_workers', type=int, default=4,
                         help='number of workers when loading data')
 
+
+    # logging settings
+    parser.add_argument('--level', type=str, default='INFO',
+                        help='level of logging')
 
     # Dataset
     parser.add_argument('--img-size', type=int, default=None, metavar='N',
@@ -358,21 +365,7 @@ if __name__ == "__main__":
     str_process_name = "single_classification:" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
-    # customize the log format
-    while logging.getLogger().handlers:
-        logging.getLogger().handlers.clear()
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    formatter = logging.Formatter(str(process_id) + 
-        ' - %(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
-    console.setFormatter(formatter)
-    # Create an instance
-    logging.getLogger().addHandler(console)
-    hostname = socket.gethostname()
-    logging.info("#############process ID = " + str(process_id) +
-                ", host name = " + hostname + "########" +
-                ", process ID = " + str(os.getpid()) +
-                ", process Name = " + str(psutil.Process(os.getpid())))
+    logging_config(args, process_id)
 
 
     name_model_ema = "-model_ema" if args.model_ema else "-no_model_ema"
