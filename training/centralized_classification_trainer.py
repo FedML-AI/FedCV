@@ -72,6 +72,7 @@ class ClassificationTrainer(ModelTrainer):
         model.train()
         batch_loss = []
         for batch_idx, (x, labels) in enumerate(train_data):
+            logging.debug("labels: {}".format(labels))
             x, labels = x.to(device), labels.to(device)
             self.optimizer.zero_grad()
             log_probs = model(x)

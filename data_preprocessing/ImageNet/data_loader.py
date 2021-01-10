@@ -263,6 +263,9 @@ def distributed_centralized_ImageNet_loader(dataset, data_dir,
     train_data_num = len(train_dataset)
     test_data_num = len(test_dataset)
 
+    logging.info("len of train_dataset: {}".format(train_dataset))
+    logging.info("len of test_dataset: {}".format(test_dataset))
+
     return train_data_num, test_data_num, train_dl, test_dl, \
            None, None, None, class_num
 

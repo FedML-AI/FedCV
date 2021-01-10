@@ -27,6 +27,9 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 
 # running
 ./single_run_classification.sh "2"  ~/anaconda3/envs/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/imagenet/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.01"
+
+# running
+./single_run_classification.sh "2"  ~/anaconda3/envs/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/imagenet/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.06"
 ```
 
 ## Pure with normal image transform
@@ -37,6 +40,9 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 
 # running 
 ./single_run_classification.sh "0"  ~/anaconda3/envs/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/imagenet/ILSVRC2012_dataset --data_transform NormalTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.01"
+
+# running 
+./single_run_classification.sh "0"  ~/anaconda3/envs/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/imagenet/ILSVRC2012_dataset --data_transform NormalTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.06"
 ```
 
 
@@ -47,6 +53,9 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 
 # running 
 ./single_run_classification.sh "1"  ~/anaconda3/envs/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/imagenet/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.01"
+
+# running 
+./single_run_classification.sh "1"  ~/anaconda3/envs/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/imagenet/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.06"
 ```
 
 ## Add model EMA
