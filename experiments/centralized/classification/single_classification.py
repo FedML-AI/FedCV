@@ -412,7 +412,7 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         model_trainer.train_one_epoch(train_data_global, device, args, epoch, train_tracker, metrics)
         model_trainer.test(test_data_global, device, args, test_tracker, metrics)
-        train_tracker.reset()
-        test_tracker.reset()
         wandb_log(prefix='Test', sp_values=test_tracker(), com_values={"epoch": epoch})
         wandb_log(prefix='Train', sp_values=train_tracker(), com_values={"epoch": epoch})
+        train_tracker.reset()
+        test_tracker.reset()
