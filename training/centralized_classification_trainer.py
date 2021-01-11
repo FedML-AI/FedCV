@@ -72,12 +72,11 @@ class ClassificationTrainer(ModelTrainer):
         model.train()
         batch_loss = []
         for batch_idx, (x, labels) in enumerate(train_data):
-            if batch_idx > 3:
-                break
-            logging.debug("labels: {}".format(labels))
             x, labels = x.to(device), labels.to(device)
             self.optimizer.zero_grad()
             log_probs = model(x)
+            # logging.debug("labels: {}".format(labels))
+            # logging.debug("pred: {}".format(log_probs))
             loss = self.train_loss_fn(log_probs, labels)
             loss.backward()
             self.optimizer.step()
@@ -86,7 +85,7 @@ class ClassificationTrainer(ModelTrainer):
                 metric_stat = metrics.evaluate(loss, log_probs, labels)
                 tracker.update_metrics(metric_stat, n_samples=labels.size(0))
                 if len(batch_loss) > 0:
-                    logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f} ACC1:'.format(
+                    logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f} ACC1:{}'.format(
                         self.id, epoch, batch_idx, sum(batch_loss) / len(batch_loss), metric_stat['Acc1']))
             else:
                 if len(batch_loss) > 0:
@@ -101,7 +100,7 @@ class ClassificationTrainer(ModelTrainer):
 
 
 
-    def train_one_step(self, train_batch_data, device, args):
+    def train_one_step(self, train_batch_data, device, args, tracker=None, metrics=None):
         model = self.model
 
         model.to(device)
@@ -113,6 +112,10 @@ class ClassificationTrainer(ModelTrainer):
         loss = self.train_loss_fn(log_probs, labels)
         loss.backward()
         self.optimizer.step()
+        if (tracker is not None) and (metrics is not None): 
+            metric_stat = metrics.evaluate(loss, log_probs, labels)
+            tracker.update_metrics(metric_stat, n_samples=labels.size(0))
+
         return loss, log_probs, labels
 
 
@@ -129,10 +132,14 @@ class ClassificationTrainer(ModelTrainer):
                 x = x.to(device)
                 target = target.to(device)
                 pred = model(x)
+                # logging.debug("labels: {}".format(target))
+                # logging.debug("pred: {}".format(pred))
                 loss = self.validate_loss_fn(pred, target)
                 if (metrics is not None) and (tracker is not None):
                     metric_stat = metrics.evaluate(loss, pred, target)
                     tracker.update_metrics(metric_stat, n_samples=target.size(0))
+                    logging.info('(Trainer_ID {}. Local Testing Iter: {} \tLoss: {:.6f} ACC1:{}'.format(
+                        self.id, batch_idx, loss.item(), metric_stat['Acc1']))
                 else:
                     raise NotImplementedError
 
