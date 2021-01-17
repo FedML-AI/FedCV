@@ -21,9 +21,11 @@ echo $data_dir
 
 
 
-mpirun -np $PROCESS_NUM -hostfile ./$MPI_HOST_FILE $PYTHON ./main.py \
-  --client_num_per_round $WORKER_NUM \
+mpirun -np $PROCESS_NUM -hostfile ./$MPI_HOST_FILE \
+  -mca btl_tcp_if_include 192.168.0.101/24 \
+  $PYTHON ./main.py \
   --data_dir $data_dir --dataset $DATASET \
+  --client_num_per_round $WORKER_NUM \
   $ARGS
 
 
