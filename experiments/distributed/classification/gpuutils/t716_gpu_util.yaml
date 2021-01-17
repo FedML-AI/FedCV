@@ -1,3 +1,38 @@
+4gpus:
+    gpu1: [1]
+    gpu2: [1]
+    gpu3: [1]
+    gpu4: [1]
+
+4gpus_1:
+    gpu6: [1]
+    gpu7: [1]
+    gpu8: [1]
+    gpu9: [1]
+
+4gpus_2:
+    gpu10: [1]
+    gpu11: [1]
+    gpu13: [1]
+    gpu14: [1]
+4gpus_3:
+    gpu15: [1]
+    gpu16: [1]
+    gpu17: [1]
+    gpu19: [1]
+4gpus_4:
+    gpu20: [1]
+    gpu21: [1]
+    gpu22: [1]
+    gpu23: [1]
+
+5gpus:
+    gpu1: [1]
+    gpu2: [1]
+    gpu3: [1]
+    gpu4: [1]
+    gpu5: [1]
+
 10gpus:
     gpu1: [2]
     gpu2: [2]
