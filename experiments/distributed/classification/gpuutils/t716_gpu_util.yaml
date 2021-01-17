@@ -1,11 +1,24 @@
-w10_1:
+10gpus:
     gpu1: [2]
     gpu2: [2]
     gpu3: [2]
     gpu4: [2]
     gpu5: [2]
 
-w20_1:
+11gpus_2:
+    gpu1: [1]
+    gpu3: [1]
+    gpu4: [1]
+    gpu5: [1]
+    gpu6: [1]
+    gpu7: [1]
+    gpu8: [1]
+    gpu9: [1]
+    gpu10: [1]
+    gpu11: [1]
+    gpu13: [1]
+
+20gpus:
     gpu1: [2]
     gpu2: [2]
     gpu3: [2]
@@ -17,7 +30,30 @@ w20_1:
     gpu9: [2]
     gpu10: [2]
 
-w40_1:
+21gpus_2:
+    gpu1: [1]
+    gpu3: [1]
+    gpu4: [1]
+    gpu5: [1]
+    gpu6: [1]
+    gpu7: [1]
+    gpu8: [1]
+    gpu9: [1]
+    gpu10: [1]
+    gpu11: [1]
+    gpu13: [1]
+    gpu14: [1]
+    gpu15: [1]
+    gpu16: [1]
+    gpu17: [1]
+    gpu19: [1]
+    gpu20: [1]
+    gpu21: [1]
+    gpu22: [1]
+    gpu23: [1]
+    gpu24: [1]
+
+40gpus:
     gpu1: [2]
     gpu2: [2]
     gpu3: [2]

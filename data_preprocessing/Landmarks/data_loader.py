@@ -126,12 +126,9 @@ def get_mapping_per_user(fn):
     return data_files, data_local_num_dict, net_dataidx_map
 
 
-# # for centralized training
-# def get_dataloader(dataset, datadir, train_files, test_files, train_bs, test_bs, dataidxs=None):
-#     return get_dataloader_Landmarks(datadir, train_files, test_files, train_bs, test_bs, dataidxs)
-
-def get_dataloader(dataset_train, dataset_test, train_bs,
-                    test_bs, dataidxs=None):
+def get_dataloader(dataset_train, dataset_test, args, dataidxs=None):
+    train_bs = args.batch_size
+    test_bs = args.batch_size
 
     train_dl = data.DataLoader(dataset=dataset_train, batch_size=train_bs, shuffle=True, drop_last=False,
                         pin_memory=True, num_workers=args.data_load_num_workers)
@@ -268,11 +265,8 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
     if args.if_timm_dataset:
         train_data_global, test_data_global = get_timm_loader(train_dataset, test_dataset, args)
     else:
-        train_data_global, test_data_global = get_dataloader(train_dataset, test_dataset,
-                                                            train_bs=batch_size, test_bs=batch_size)
+        train_data_global, test_data_global = get_dataloader(train_dataset, test_dataset, args)
 
-
-    # train_data_global, test_data_global = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size)
     # logging.info("train_dl_global number = " + str(len(train_data_global)))
     # logging.info("test_dl_global number = " + str(len(test_data_global)))
     test_data_num = len(test_files)
@@ -290,17 +284,12 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
         # data_local_num_dict[client_idx] = local_data_num
         # logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
 
-        # training batch size = 64; algorithms batch size = 32
-        # train_data_local, test_data_local = get_dataloader(dataset, data_dir, train_files, test_files, batch_size, batch_size)
-
-
         train_dataset_local = Landmarks(data_dir, train_files, dataidxs=dataidxs, train=True, transform=transform_train, download=True)
         test_dataset_local = Landmarks(data_dir, test_files, dataidxs=None, train=False, transform=transform_test, download=True)
         if args.if_timm_dataset:
             train_data_local, test_data_local = get_timm_loader(train_dataset_local, test_dataset_local, args)
         else:
-            train_data_local, test_data_local = get_dataloader(train_dataset_local, test_dataset_local,
-                                                                train_bs=batch_size, test_bs=batch_size)
+            train_data_local, test_data_local = get_dataloader(train_dataset_local, test_dataset_local, args)
 
         # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
         #     client_idx, len(train_data_local), len(test_data_local)))

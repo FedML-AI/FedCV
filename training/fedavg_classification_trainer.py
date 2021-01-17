@@ -17,8 +17,28 @@ class ClassificationTrainer(ModelTrainer):
         # self.model = model
         self.args = args
 
-        self.optimizer = create_optimizer(args, model)
-        self.lr_scheduler, self.num_epochs = create_scheduler(args, self.optimizer)
+        if args.opt in ['rmsproptf']:
+            self.optimizer = create_optimizer(args, model)
+        elif args.opt == 'sgd':
+             self.optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, 
+                                            weight_decay=args.wd, momentum=args.momentum)
+        elif args.opt == 'adam':
+            self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
+                                         lr=args.lr,
+                                         weight_decay=args.wd, amsgrad=True)
+        else:
+            raise NotImplementedError
+
+        # In fedavg, decay according to the round
+        args.decay_epochs = args.decay_rounds
+        if args.sched == 'step':
+            self.lr_scheduler, self.num_epochs = create_scheduler(args, self.optimizer)
+        elif args.sched == 'StepLR':
+            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 
+                                                args.decay_epochs, args.decay_rate)
+        else:
+            raise NotImplementedError
+
         self.lr_scheduler.step(0)
 
         if args.smoothing:
@@ -52,13 +72,14 @@ class ClassificationTrainer(ModelTrainer):
                 loss.backward()
                 self.optimizer.step()
                 batch_loss.append(loss.item())
+                logging.info('Local Training Epoch: {} iter: {} \t Loss: {:.6f}'.format(
+                                epoch, batch_idx, loss.item()))
             if len(batch_loss) > 0:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(Trainer_ID {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)))
         # self.lr_scheduler.step(epoch=epoch + 1, metric=None)
         self.lr_scheduler.step(epoch=args.round_idx, metric=None)
-
 
 
     def test(self, test_data, device, args):

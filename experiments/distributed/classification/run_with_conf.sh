@@ -20,8 +20,10 @@ echo $data_dir
 
 
 
+
 mpirun -np $PROCESS_NUM -hostfile ./$MPI_HOST_FILE $PYTHON ./main.py \
   --client_num_per_round $WORKER_NUM \
+  --data_dir $data_dir --dataset $DATASET \
   $ARGS
 
 
