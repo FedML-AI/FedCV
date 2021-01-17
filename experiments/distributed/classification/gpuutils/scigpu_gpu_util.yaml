@@ -1,0 +1,36 @@
+local_10:
+    localhost: [2, 2, 3, 3]
+
+local_11:
+    localhost: [2, 3, 3, 3]
+
+local_20:
+    localhost: [5, 5, 5, 5]
+
+local_21:
+    localhost: [6, 5, 5, 5]
+
+
+gpu_util_11:
+    scigpu10: [2, 1 ,1 ,1]
+    scigpu11: [1, 2, 2, 1]
+
+gpu_util_21:
+    scigpu10: [2, 1, 1, 1]
+    scigpu11: [1, 1, 1, 1]
+    scigpu13: [2, 2, 1, 2]
+    scigpu14: [2, 1, 1, 1]
+
+gpu_util_41:
+    scigpu10: [5, 4 ,4 ,4]
+    scigpu11: [4, 4, 4, 4]
+    scigpu12: [8, 8 ,0 ,0]
+    scigpu14: [2, 2, 2, 2]
+
+gpu_util_51:
+    scigpu10: [5, 4 ,4 ,4]
+    scigpu11: [4, 4, 4, 4]
+    scigpu12: [8, 8 ,0 ,0]
+    scigpu13: [2, 2, 2, 2]
+    scigpu14: [2, 2, 2, 2]
+

@@ -1,6 +1,6 @@
 4gpus:
     gpu1: [1]
-    gpu2: [1]
+    gpu5: [1]
     gpu3: [1]
     gpu4: [1]
 
