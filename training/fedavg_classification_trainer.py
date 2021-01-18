@@ -79,7 +79,7 @@ class ClassificationTrainer(ModelTrainer):
                 logging.info('(Trainer_ID {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)))
         # self.lr_scheduler.step(epoch=epoch + 1, metric=None)
-        self.lr_scheduler.step(epoch=args.round_idx, metric=None)
+        self.lr_scheduler.step(epoch=args.round_idx)
 
 
     def test(self, test_data, device, args):
@@ -118,5 +118,9 @@ class ClassificationTrainer(ModelTrainer):
                 metrics['test_correct'] += correct.item()
                 metrics['test_loss'] += loss.item() * target.size(0)
                 metrics['test_total'] += target.size(0)
-
+                logging.info('Local Testing iter: {} \t Loss: {:.6f} Acc: {:.6f}'.format(
+                                batch_idx, loss.item(),  metrics['test_correct']/metrics['test_total']))
         return metrics
+
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
+        pass

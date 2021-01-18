@@ -62,14 +62,14 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=4, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--batch_size', type=int, default=64, metavar='N',
-                        help='input batch size for training (default: 64)')
+    # parser.add_argument('--batch_size', type=int, default=64, metavar='N',
+    #                     help='input batch size for training (default: 64)')
 
     parser.add_argument('--client_optimizer', type=str, default='adam',
                         help='SGD with momentum; adam')
 
-    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
-                        help='learning rate (default: 0.001)')
+    # parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+    #                     help='learning rate (default: 0.001)')
 
     parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.001)
 
@@ -134,8 +134,8 @@ def add_args(parser):
                         help='Override std deviation of of dataset')
     parser.add_argument('--interpolation', default='', type=str, metavar='NAME',
                         help='Image resize interpolation type (overrides model)')
-    # parser.add_argument('-b', '--batch-size', type=int, default=32, metavar='N',
-    #                     help='input batch size for training (default: 32)')
+    parser.add_argument('-b', '--batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for training (default: 32)')
     parser.add_argument('-vb', '--validation-batch-size-multiplier', type=int, default=1, metavar='N',
                         help='ratio of validation batch size to training batch size (default: 1)')
 
@@ -285,7 +285,8 @@ def load_data(args, dataset_name):
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_ImageNet(dataset=dataset_name, data_dir=args.data_dir,
                                                  partition_method=None, partition_alpha=None,
-                                                 client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                 client_number=args.client_num_in_total, 
+                                                 batch_size=args.batch_size, args=args)
 
     elif dataset_name == "gld23k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
@@ -303,8 +304,8 @@ def load_data(args, dataset_name):
                                                   fed_train_map_file=fed_train_map_file,
                                                   fed_test_map_file=fed_test_map_file,
                                                   partition_method=None, partition_alpha=None,
-                                                  client_number=args.client_num_in_total, batch_size=args.batch_size)
-
+                                                  client_number=args.client_num_in_total, 
+                                                  batch_size=args.batch_size, args=args)
     elif dataset_name == "gld160k":
         logging.info("load_data. dataset_name = %s" % dataset_name)
         args.client_num_in_total = 1262
@@ -318,7 +319,8 @@ def load_data(args, dataset_name):
                                                   fed_train_map_file=fed_train_map_file,
                                                   fed_test_map_file=fed_test_map_file,
                                                   partition_method=None, partition_alpha=None,
-                                                  client_number=args.client_num_in_total, batch_size=args.batch_size)
+                                                  client_number=args.client_num_in_total, 
+                                                  batch_size=args.batch_size, args=args)
     else:
         raise Exception("no such dataset")
 
@@ -422,7 +424,7 @@ def init_training_device_from_gpu_util_parse(process_id, worker_number, gpu_util
         # example parse str `gpu_util_parse`: 
         # "gpu1:0,1,1,2;gpu2:3,3,3;gpu3:0,0,0,1,2,4,4,0"
         gpu_util_parse_temp = gpu_util_parse.split(';')
-        gpu_util_parse_temp = [(item.split(':')[0], item.split(':')[1]) for item in gpu_mappings ]
+        gpu_util_parse_temp = [(item.split(':')[0], item.split(':')[1]) for item in gpu_util_parse_temp ]
 
         gpu_util = {}
         for (host, gpus_str) in gpu_util_parse_temp:
@@ -460,7 +462,7 @@ if __name__ == "__main__":
         logging.info(args)
 
         # customize the process name
-        str_process_name = args.algorithm + " :" + str(process_id)
+        str_process_name = 'fedavg' + " :" + str(process_id)
         setproctitle.setproctitle(str_process_name)
 
         logging_config(args, process_id)
