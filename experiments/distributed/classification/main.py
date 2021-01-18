@@ -94,6 +94,15 @@ def add_args(parser):
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
 
+    parser.add_argument('--gpu_util_file', type=str, default=None,
+                        help='the gpu utilization file for servers and clients. If there is no \
+                        gpu_util_file, gpu will not be used.')
+    parser.add_argument('--gpu_util_key', type=str, default=None,
+                        help='the key in gpu utilization file')
+    parser.add_argument('--gpu_util_parse', type=str, default=None,
+                        help='the gpu utilization string for servers and clients. If there is no \
+                        gpu_util_parse, gpu will not be used. Note if this and gpu_util_file are \
+                        both defined, gpu_util_parse will be used but not gpu_util_file')
 
     parser.add_argument('--pretrained',action='store_true', default=False,
                         help='Start with pretrained version of specified network (if avail)')
@@ -401,6 +410,41 @@ def init_training_device_from_gpu_util_file(process_id, worker_number, gpu_util_
         #return gpu_util_map[process_id][1]
         return device
 
+def init_training_device_from_gpu_util_parse(process_id, worker_number, gpu_util_parse):
+    if gpu_util_parse == None:
+        device = torch.device("cpu")
+        logging.info(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        logging.info(" ##################  Not Indicate gpu_util_file, using cpu  #################")
+        logging.info(device)
+        #return gpu_util_map[process_id][1]
+        return device
+    else:
+        # example parse str `gpu_util_parse`: 
+        # "gpu1:0,1,1,2;gpu2:3,3,3;gpu3:0,0,0,1,2,4,4,0"
+        gpu_util_parse_temp = gpu_util_parse.split(';')
+        gpu_util_parse_temp = [(item.split(':')[0], item.split(':')[1]) for item in gpu_mappings ]
+
+        gpu_util = {}
+        for (host, gpus_str) in gpu_util_parse_temp:
+            gpu_util[host] = [int(num_process_on_gpu) for num_process_on_gpu in gpus_str.split(',')]
+
+        gpu_util_map = {}
+        i = 0
+        for host, gpus_util_map_host in gpu_util.items():
+            for gpu_j, num_process_on_gpu in enumerate(gpus_util_map_host):
+                for _ in range(num_process_on_gpu):
+                    gpu_util_map[i] = (host, gpu_j)
+                    i += 1
+        logging.info("Process %d running on host: %s,gethostname: %s, gpu: %d ..." % (
+            process_id, gpu_util_map[process_id][0], socket.gethostname(), gpu_util_map[process_id][1]))
+        assert i == worker_number
+
+        device = torch.device("cuda:" + str(gpu_util_map[process_id][1]) if torch.cuda.is_available() else "cpu")
+        logging.info(device)
+        #return gpu_util_map[process_id][1]
+        return device
+
+
 
 if __name__ == "__main__":
     # initialize distributed computing (MPI)
@@ -454,7 +498,10 @@ if __name__ == "__main__":
         # machine 4: worker3, worker7;
         # Therefore, we can see that workers are assigned according to the order of machine list.
         logging.info("process_id = %d, size = %d" % (process_id, worker_number))
-        device = init_training_device_from_gpu_util_file(process_id, worker_number, args.gpu_util_file, args.gpu_util_key)
+        if args.gpu_util_parse is not None:
+            device = init_training_device_from_gpu_util_parse(process_id, worker_number, args.gpu_util_parse)
+        else:
+            device = init_training_device_from_gpu_util_file(process_id, worker_number, args.gpu_util_file, args.gpu_util_key)
 
         # load data
         dataset = load_data(args, args.dataset)
