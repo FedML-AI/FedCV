@@ -4,6 +4,7 @@
 .vscode/*
 
 *.pyc
+*.conf
 
 wandb
 

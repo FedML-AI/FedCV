@@ -27,10 +27,10 @@ from data_preprocessing.ImageNet.data_loader import load_partition_data_ImageNet
 from data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
 from training.fedavg_classification_trainer import ClassificationTrainer
 
-from fedml_api.utils.context import (
+from utils.context import (
     raise_MPI_error
 )
-from fedml_api.utils.logger import (
+from utils.logger import (
     logging_config
 )
 

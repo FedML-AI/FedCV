@@ -35,6 +35,38 @@ mnist_data_dir=/nfs_home/datasets/mnist
 --comm_round 300  --epochs 1 \
 --opt rmsproptf --lr 0.03  --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --sched step --decay-rounds 1 --decay-rate .97 \
 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \ "
+
+
+# directly run
+# on scigpu
+
+mpirun -np 3 -H scigpu3:2,scigpu4:1 \
+    ~/anaconda3/envs/py36/bin/python ./main.py \
+    --gpu_util_parse "gpu1:0,0,0,0;gpu1:0,0,0,1;gpu3:0,1,0,0" \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --dataset gld23k --data_dir ~/datasets/landmarks \
+    --client_num_per_round 2 --client_num_in_total 233 \
+    --if-timm-dataset -b 16  --data_transform FLTransform \
+    --comm_round 300  --epochs 1 \
+    --model mobilenet_v3 \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt rmsproptf --lr 0.03 --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched step --decay-rounds 1 --decay-rate .97 \
+
+
+
+
+
+
+
+# on t716
+
+  -mca btl_tcp_if_include 192.168.0.101/24 \
+
+
+
+
+
 ```
 
 
