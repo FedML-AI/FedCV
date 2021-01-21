@@ -21,7 +21,7 @@ from timm.models import resume_checkpoint, load_checkpoint, convert_splitbn_mode
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 # from FedML.fedml_api.standalone.fedavg.fedavg_api import FedAvgAPI
-from .fedavg_api import FedAvgAPI
+from fedavg_api import FedAvgAPI
 
 from data_preprocessing.ImageNet.data_loader import load_partition_data_ImageNet
 from data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
@@ -372,8 +372,13 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    parser = add_args(argparse.ArgumentParser(description='FedAvg-standalone'))
-    args = parser.parse_args()
+    # parser = add_args(argparse.ArgumentParser(description='FedAvg-standalone'))
+    # parser = argparse.ArgumentParser(description='FedAvg-standalone')
+
+    parser = argparse.ArgumentParser()
+    args = add_args(parser)
+    args.rank = 0
+
     logger.info(args)
     device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
     logger.info(device)

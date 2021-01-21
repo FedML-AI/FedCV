@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import wandb
 
-from .client import Client
+from client import Client
 
 
 class FedAvgAPI(object):
