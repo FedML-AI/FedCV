@@ -412,7 +412,7 @@ if __name__ == "__main__":
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
-    model_trainer = ClassificationTrainer(args, device, model)
+    model_trainer = ClassificationTrainer(model, device, args)
     logging.info(model)
 
     fedavgAPI = FedAvgAPI(dataset, device, args, model_trainer)
