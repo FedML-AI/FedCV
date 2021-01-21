@@ -80,7 +80,7 @@ def get_ImageNet_truncated(imagenet_dataset_train, imagenet_dataset_test, train_
     """
         imagenet_dataset_train, imagenet_dataset_test should be ImageNet or ImageNet_hdf5
     """
-    if type(imagenet_dataset_train) == ImageNet:
+    if type(imagenet_dataset_train) in [ImageNet, ImageNet100]:
         dl_obj = ImageNet_truncated
     elif type(imagenet_dataset_train) == ImageNet_hdf5:
         dl_obj = ImageNet_truncated_hdf5
