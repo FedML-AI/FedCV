@@ -9,6 +9,11 @@ import torch.nn.functional as F
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../FedML")))
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
+##############################################################################
+# The following implementation was taken from the following repo with slight #
+# structural modifications to suit our architecture.                         #
+# Source: https://github.com/VainF/DeepLabV3Plus-Pytorch                     #
+##############################################################################
 
 def _make_divisible(v, divisor, min_value=None):
     """
