@@ -24,6 +24,7 @@ mpiexec \
     --frequency_of_the_test 10 \
     --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset \
     --if-timm-dataset -b 16  --data_transform FLTransform \
+    --data_load_num_workers 2 \
     --comm_round 1000  --epochs 1 \
     --model mobilenet_v3 \
     --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \

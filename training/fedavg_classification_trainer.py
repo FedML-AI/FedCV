@@ -28,7 +28,7 @@ class ClassificationTrainer(ModelTrainer):
                                          weight_decay=args.wd, amsgrad=True)
         else:
             raise NotImplementedError
-
+        # TODO
         # In fedavg, decay according to the round
         args.decay_epochs = args.decay_rounds
         if args.sched == 'step':

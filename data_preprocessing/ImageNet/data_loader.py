@@ -97,7 +97,7 @@ def get_ImageNet_truncated(imagenet_dataset_train, imagenet_dataset_test, train_
 
 
 def get_dataloader(dataset_train, dataset_test, train_bs,
-                    test_bs, dataidxs=None, net_dataidx_map=None):
+                    test_bs, dataidxs=None, net_dataidx_map=None, args=None):
 
     train_dl = data.DataLoader(dataset=dataset_train, batch_size=train_bs, shuffle=True, drop_last=False,
                         pin_memory=True, num_workers=args.data_load_num_workers)
@@ -323,8 +323,8 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
         train_data_global, test_data_global = get_timm_loader(train_dataset, test_dataset, args)
     else:
         train_data_global, test_data_global = get_dataloader(train_dataset, test_dataset,
-                                                                                train_bs=batch_size, test_bs=batch_size,
-                                                                                dataidxs=None, net_dataidx_map=None)
+                                                            train_bs=batch_size, test_bs=batch_size,
+                                                            dataidxs=None, net_dataidx_map=None, args=None)
 
     logging.info("train_dl_global number = " + str(len(train_data_global)))
     logging.info("test_dl_global number = " + str(len(test_data_global)))
@@ -368,7 +368,7 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
         else:
             train_data_local, test_data_local = get_dataloader(train_dataset_local, test_dataset_local,
                                                                 train_bs=batch_size, test_bs=batch_size,
-                                                                dataidxs=None, net_dataidx_map=None)
+                                                                dataidxs=None, net_dataidx_map=None, args=args)
 
         # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
         # client_idx, len(train_data_local), len(test_data_local)))

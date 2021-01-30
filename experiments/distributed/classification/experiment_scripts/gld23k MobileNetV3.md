@@ -40,6 +40,7 @@ mpirun -np 3 -host gpu1:2,gpu3:1 \
     --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
     --frequency_of_the_test 10 \
     --dataset gld23k --data_dir /nfs_home/datasets/landmarks \
+    --data_load_num_workers 2 \
     --if-timm-dataset -b 16  --data_transform FLTransform \
     --comm_round 300  --epochs 1 \
     --model mobilenet_v3 \
@@ -60,7 +61,7 @@ mpirun -np 6 -host gpu1:1,gpu3:1,gpu4:1,gpu5:1,gpu6:1,gpu7:1 \
     --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
     --frequency_of_the_test 10 \
     --dataset gld23k --data_dir /nfs_home/datasets/landmarks \
-
+    --data_load_num_workers 2 \
     --if-timm-dataset -b 16  --data_transform FLTransform \
     --comm_round 300  --epochs 1 \
     --model mobilenet_v3 \
@@ -82,6 +83,7 @@ mpirun -np 11 -host gpu1:1,gpu3:1,gpu4:1,gpu5:1,gpu6:1,gpu7:1,gpu8:1,gpu9:1,gpu1
     --frequency_of_the_test 10 \
     --dataset gld23k --data_dir /nfs_home/datasets/landmarks \
     --if-timm-dataset -b 16  --data_transform FLTransform \
+    --data_load_num_workers 2 \
     --comm_round 1000  --epochs 1 \
     --model mobilenet_v3 \
     --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
@@ -112,6 +114,7 @@ mpirun -np 11 -host gpu1:1,gpu3:1,gpu4:1,gpu5:1,gpu6:1,gpu7:1,gpu8:1,gpu9:1,gpu1
     --frequency_of_the_test 10 \
     --dataset gld23k --data_dir /nfs_home/datasets/landmarks \
     --if-timm-dataset -b 16  --data_transform FLTransform \
+    --data_load_num_workers 2 \
     --comm_round 1000  --epochs 1 \
     --model mobilenet_v3 \
     --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
@@ -127,6 +130,7 @@ mpirun -np 11 -host gpu14:1,gpu15:1,gpu16:1,gpu17:1,gpu19:1,gpu20:1,gpu21:1,gpu2
     --frequency_of_the_test 10 \
     --dataset gld23k --data_dir /nfs_home/datasets/landmarks \
     --if-timm-dataset -b 64  --data_transform FLTransform \
+    --data_load_num_workers 2 \
     --comm_round 1000  --epochs 1 \
     --model mobilenet_v3 \
     --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \

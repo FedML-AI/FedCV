@@ -126,7 +126,7 @@ def get_mapping_per_user(fn):
     return data_files, data_local_num_dict, net_dataidx_map
 
 
-def get_dataloader(dataset_train, dataset_test, args, dataidxs=None):
+def get_dataloader(dataset_train, dataset_test, dataidxs=None, args=None):
     train_bs = args.batch_size
     test_bs = args.batch_size
 

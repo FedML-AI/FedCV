@@ -118,11 +118,11 @@ class FedAvgAPI(object):
 
         logging.info("################local_test_on_all_clients : {}".format(round_idx))
 
-        train_metrics = {
-            'num_samples': [],
-            'num_correct': [],
-            'losses': []
-        }
+        # train_metrics = {
+        #     'num_samples': [],
+        #     'num_correct': [],
+        #     'losses': []
+        # }
 
         test_metrics = {
             'num_samples': [],
@@ -137,16 +137,18 @@ class FedAvgAPI(object):
             Note: for datasets like "fed_CIFAR100" and "fed_shakespheare",
             the training client number is larger than the testing client number
             """
+            if self.args.dataset in ['gld23k', 'gld160k'] and client_idx > 1:
+                break
             if self.test_data_local_dict[client_idx] is None:
                 continue
             client.update_local_dataset(0, self.train_data_local_dict[client_idx],
                                         self.test_data_local_dict[client_idx],
                                         self.train_data_local_num_dict[client_idx])
-            # train data
-            train_local_metrics = client.local_test(False)
-            train_metrics['num_samples'].append(copy.deepcopy(train_local_metrics['test_total']))
-            train_metrics['num_correct'].append(copy.deepcopy(train_local_metrics['test_correct']))
-            train_metrics['losses'].append(copy.deepcopy(train_local_metrics['test_loss']))
+            # # train data
+            # train_local_metrics = client.local_test(False)
+            # train_metrics['num_samples'].append(copy.deepcopy(train_local_metrics['test_total']))
+            # train_metrics['num_correct'].append(copy.deepcopy(train_local_metrics['test_correct']))
+            # train_metrics['losses'].append(copy.deepcopy(train_local_metrics['test_loss']))
 
             # test data
             test_local_metrics = client.local_test(True)
@@ -162,17 +164,17 @@ class FedAvgAPI(object):
                 break
 
         # test on training dataset
-        train_acc = sum(train_metrics['num_correct']) / sum(train_metrics['num_samples'])
-        train_loss = sum(train_metrics['losses']) / sum(train_metrics['num_samples'])
+        # train_acc = sum(train_metrics['num_correct']) / sum(train_metrics['num_samples'])
+        # train_loss = sum(train_metrics['losses']) / sum(train_metrics['num_samples'])
 
         # test on test dataset
         test_acc = sum(test_metrics['num_correct']) / sum(test_metrics['num_samples'])
         test_loss = sum(test_metrics['losses']) / sum(test_metrics['num_samples'])
 
-        stats = {'training_acc': train_acc, 'training_loss': train_loss}
-        wandb.log({"Train/Acc": train_acc, "round": round_idx})
-        wandb.log({"Train/Loss": train_loss, "round": round_idx})
-        logging.info(stats)
+        # stats = {'training_acc': train_acc, 'training_loss': train_loss}
+        # wandb.log({"Train/Acc": train_acc, "round": round_idx})
+        # wandb.log({"Train/Loss": train_loss, "round": round_idx})
+        # logging.info(stats)
 
         stats = {'test_acc': test_acc, 'test_loss': test_loss}
         wandb.log({"Test/Acc": test_acc, "round": round_idx})
