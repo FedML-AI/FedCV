@@ -70,7 +70,7 @@ def add_args(parser):
     # parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
     #                     help='learning rate (default: 0.001)')
 
-    parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.001)
+    parser.add_argument('--wd', help='weight decay parameter;', type=float, default=0.00001)
 
     parser.add_argument('--epochs', type=int, default=5, metavar='EP',
                         help='how many epochs will be trained locally')
@@ -155,7 +155,7 @@ def add_args(parser):
                         help='Optimizer Betas (default: None, use opt default)')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='Optimizer momentum (default: 0.9)')
-    parser.add_argument('--weight-decay', type=float, default=0.0001,
+    parser.add_argument('--weight-decay', type=float, default=0.00001,
                         help='weight decay (default: 0.0001)')
     parser.add_argument('--clip-grad', type=float, default=None, metavar='NORM',
                         help='Clip gradient norm (default: None, no clipping)')
@@ -378,6 +378,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = add_args(parser)
     args.rank = 0
+    args.wd = args.weight_decay
 
     logger.info(args)
     device = torch.device("cuda:" + str(args.gpu) if torch.cuda.is_available() else "cpu")
