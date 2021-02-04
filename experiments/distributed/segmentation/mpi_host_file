@@ -1,1 +1,4 @@
-lambda-server2
+gpu-worker1 slots=2
+gpu-worker2 slots=1
+gpu-worker3 slots=1
+gpu-worker4 slots=1

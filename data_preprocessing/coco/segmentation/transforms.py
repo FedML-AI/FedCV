@@ -3,7 +3,7 @@ from typing import Iterable, Dict
 import numpy as np
 import torch
 
-from PIL import Image
+from PIL.Image import Image
 
 
 class Normalize(object):

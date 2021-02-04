@@ -1,0 +1,5 @@
+cluster_541:
+        gpu-worker1: [0,2]
+        gpu-worker2: [0,1]
+        gpu-worker3: [0,1]
+        gpu-worker4: [0,1]

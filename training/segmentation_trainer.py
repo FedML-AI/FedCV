@@ -1,9 +1,12 @@
 import logging, time
+import sys, os
 
 import numpy as np
 import torch
 from torch import nn
 
+# add the FedML root directory to the python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
 from FedML.fedml_core.trainer.model_trainer import ModelTrainer
 from FedML.fedml_api.distributed.fedseg.utils import SegmentationLosses, Evaluator, LR_Scheduler, EvaluationMetricsKeeper
 
@@ -119,5 +122,5 @@ class SegmentationTrainer(ModelTrainer):
         eval_metrics = EvaluationMetricsKeeper(test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss)
         return eval_metrics
 
-    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None) -> bool:
-        return False
+    def test_on_the_server(self, train_data_local_dict, test_data_local_dict, device, args=None):
+        pass

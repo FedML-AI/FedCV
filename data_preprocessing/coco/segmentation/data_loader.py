@@ -1,4 +1,4 @@
-from typing import Tuple, Callable, Optional, List, Iterable, Union, Literal
+from typing import Tuple, Callable, Optional, List, Iterable, Union, Literal, Sized
 
 import numpy as np
 import torch.utils.data as data
