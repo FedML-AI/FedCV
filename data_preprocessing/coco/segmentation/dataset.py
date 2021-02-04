@@ -9,7 +9,7 @@ from pathlib import Path, PurePath
 from typing import Callable, List, Any, Tuple, TypedDict, Optional, Literal
 
 import pycocotools.mask as coco_mask
-from PIL import Image
+from PIL.Image import Image
 from pycocotools.coco import COCO
 
 from ..coco_base import COCOBase

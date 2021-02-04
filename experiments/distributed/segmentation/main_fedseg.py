@@ -16,6 +16,7 @@ import wandb
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
+from FedML.fedml_api.distributed.utils.gpu_mapping import mapping_processes_to_gpu_device_from_yaml_file
 from FedML.fedml_api.distributed.fedseg.FedSegAPI import FedML_init, FedML_FedSeg_distributed
 from FedML.fedml_api.distributed.fedseg.utils import count_parameters
 
@@ -40,7 +41,7 @@ def add_args(parser):
     parser.add_argument('--backbone', type=str, default='resnet',
                         help='employ with backbone (default: xception)')
 
-    parser.add_argument('--backbone_pretrained', type=bool, default=True,
+    parser.add_argument('--backbone_pretrained', type=bool, default=False,
                         help='pretrained backbone (default: True)')
 
     parser.add_argument('--backbone_freezed', type=bool, default=False,
@@ -63,7 +64,7 @@ def add_args(parser):
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
                         help='data directory (default = /home/chaoyanghe/BruteForce/FedML/data/pascal_voc)')
  
-    parser.add_argument('--checkname', type=str, default='deeplab-resnet', help='set the checkpoint name')
+    parser.add_argument('--checkname', type=str, default='deeplab-mobilenet-finetune-homo', help='set the checkpoint name')
 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
@@ -130,6 +131,12 @@ def add_args(parser):
     parser.add_argument('--gpu_num_per_server', type=int, default=4,
                         help='gpu_num_per_server')
 
+    parser.add_argument('--gpu_mapping_file', type=str, default="gpu_mapping.yaml",
+                        help='the gpu utilization file for servers and clients. If there is no \
+                        gpu_util_file, gpu will not be used.')
+
+    parser.add_argument('--gpu_mapping_key', type=str, default="cluster_541",
+                        help='the key in gpu utilization file')
 
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
@@ -228,8 +235,7 @@ if __name__ == "__main__":
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
         wandb.init(
-            # project="federated_nas",
-            project = "fedml",
+            project = "fedcv-segmentation",
             name = args.process_name + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
                 args.epochs) + "-lr" + str(
                 args.lr),
@@ -253,8 +259,9 @@ if __name__ == "__main__":
     # machine 3: worker2, worker6;
     # machine 4: worker3, worker7;
     # Therefore, we can see that workers are assigned according to the order of machine list.
-    
-    device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server, args.gpu_server_num)
+   
+    device = mapping_processes_to_gpu_device_from_yaml_file(process_id, worker_number, args.gpu_mapping_file, args.gpu_mapping_key)
+    #device = init_training_device(process_id, worker_number - 1, args.gpu_num_per_server, args.gpu_server_num)
 
     # load data
     dataset = load_data(process_id, args, args.dataset)
