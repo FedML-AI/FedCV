@@ -27,6 +27,16 @@ from utils.metrics import Metrics
 from utils.wandb_util import wandb_log
 from data_preprocessing.ImageNet.data_loader import distributed_centralized_ImageNet_loader
 from data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
+
+from data_preprocessing.cifar10.iid_data_loader import load_iid_cifar10
+from data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
+from data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
+from data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
+
+
+
+
+
 from training.centralized_classification_trainer import ClassificationTrainer
 
 
@@ -302,6 +312,20 @@ def load_data(args, dataset_name):
                                                   fed_test_map_file=fed_test_map_file,
                                                   partition_method=None, partition_alpha=None,
                                                   client_number=args.client_num_in_total, batch_size=args.batch_size)
+    else:
+        if dataset_name == "cifar10":
+            data_loader = load_partition_data_cifar10
+        elif dataset_name == "cifar100":
+            data_loader = load_partition_data_cifar100
+        elif dataset_name == "cinic10":
+            data_loader = load_partition_data_cinic10
+        else:
+            data_loader = load_partition_data_cifar10
+
+        train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
+                                args.partition_alpha, args.client_num_in_total, args.batch_size)
     else:
         raise Exception("no such dataset")
 
