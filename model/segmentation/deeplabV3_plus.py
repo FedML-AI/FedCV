@@ -12,8 +12,8 @@ import torch.utils.model_zoo as model_zoo
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../FedML")))
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 from fedml_api.model.cv.xception import *
-from resnet import *
-from mobilenet_v2 import *
+from .resnet import *
+from .mobilenet_v2 import *
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, dilation, BatchNorm):
@@ -172,7 +172,7 @@ class FeatureExtractor(nn.Module):
         elif backbone == 'resnet':
             return ResNet101(output_stride, BatchNorm, pretrained=pretrained)
         elif backbone == 'mobilenet':
-            backbone_model = MobileNetV2Encoder(num_classes=num_classes, output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
+            backbone_model = MobileNetV2Encoder(output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
             backbone_model.low_level_features = backbone_model.features[0:4]
             backbone_model.high_level_features = backbone_model.features[4:-1]
             backbone_model.features = None

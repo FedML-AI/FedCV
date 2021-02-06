@@ -87,7 +87,7 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-    def __init__(self, output_stride, num_classes, batch_norm, width_mult=1.0, inverted_residual_setting=None, round_nearest=8, pretrained=True):
+    def __init__(self, output_stride, batch_norm, num_classes=1000, width_mult=1.0, inverted_residual_setting=None, round_nearest=8, pretrained=True):
         """
         MobileNet V2 main class
         Args:
