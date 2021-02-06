@@ -25,8 +25,12 @@ from fedavg_api import FedAvgAPI
 
 from data_preprocessing.ImageNet.data_loader import load_partition_data_ImageNet
 from data_preprocessing.Landmarks.data_loader import load_partition_data_landmarks
-from training.fedavg_classification_trainer import ClassificationTrainer
+from data_preprocessing.cifar10.iid_data_loader import load_iid_cifar10
+from data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
+from data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
+from data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
 
+from training.fedavg_classification_trainer import ClassificationTrainer
 
 from utils.logger import (
     logging_config
@@ -324,7 +328,19 @@ def load_data(args, dataset_name):
                                                   client_number=args.client_num_in_total, 
                                                   batch_size=args.batch_size, args=args)
     else:
-        raise Exception("no such dataset")
+        if dataset_name == "cifar10":
+            data_loader = load_partition_data_cifar10
+        elif dataset_name == "cifar100":
+            data_loader = load_partition_data_cifar100
+        elif dataset_name == "cinic10":
+            data_loader = load_partition_data_cinic10
+        else:
+            raise Exception("no such dataset")
+
+        train_data_num, test_data_num, train_data_global, test_data_global, \
+        train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
+        class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
+                                args.partition_alpha, args.client_num_in_total, args.batch_size)
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global,
                train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num]
