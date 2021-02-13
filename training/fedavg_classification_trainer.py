@@ -19,7 +19,7 @@ class ClassificationTrainer(ModelTrainer):
 
         if args.opt in ['rmsproptf']:
             self.optimizer = create_optimizer(args, model)
-        elif args.opt == 'sgd':
+        elif args.opt in ['sgd', 'momentum']:
              self.optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, 
                                             weight_decay=args.wd, momentum=args.momentum)
         elif args.opt == 'adam':

@@ -5,10 +5,10 @@
 # DAAI
 
 ~/py36/bin/python ./main.py \
---gpu 3 \
+--gpu 0 \
 --client_num_per_round 10 --client_num_in_total 100 \
 --frequency_of_the_test 10 \
---dataset gld23k --data_dir /home/datasets/landmarks \
+--dataset cifar100 --data_dir /home/datasets/cifar100 \
 --if-timm-dataset -b 64  --data_transform FLTransform \
 --comm_round 3000  --epochs 1 \
 --model efficientnet \
