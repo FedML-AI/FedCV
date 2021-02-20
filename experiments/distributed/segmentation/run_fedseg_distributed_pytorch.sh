@@ -17,8 +17,10 @@ CLIENT_OPTIMIZER=${14}
 LR=${15}
 DATASET=${16}
 DATA_DIR=${17}
-CHECKNAME=${18}
-CI=${19}
+EVALUATION_FREQUENCY=${18}
+GPU_MAPPING_KEY=${19}
+CHECKPOINT_NAME=${20}
+CI=${21}
 
 echo $MODEL
 echo $BACKBONE
@@ -49,4 +51,5 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --evaluation_frequency $EVALUATION_FREQUENCY \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
+  --gpu_mapping_key $GPU_MAPPING_KEY \
   --ci $CI
