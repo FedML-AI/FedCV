@@ -41,7 +41,7 @@ def add_args(parser):
     parser.add_argument('--backbone', type=str, default='resnet',
                         help='employ with backbone (default: xception)')
 
-    parser.add_argument('--backbone_pretrained', type=bool, default=False,
+    parser.add_argument('--backbone_pretrained', type=bool, default=True,
                         help='pretrained backbone (default: True)')
 
     parser.add_argument('--backbone_freezed', type=bool, default=False,
@@ -64,7 +64,7 @@ def add_args(parser):
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
                         help='data directory (default = /home/chaoyanghe/BruteForce/FedML/data/pascal_voc)')
  
-    parser.add_argument('--checkname', type=str, default='deeplab-mobilenet-finetune-homo', help='set the checkpoint name')
+    parser.add_argument('--checkname', type=str, default='deeplab-resnet-finetune-hetero', help='set the checkpoint name')
 
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
@@ -93,7 +93,7 @@ def add_args(parser):
     parser.add_argument('--client_optimizer', type=str, default='sgd',
                         help='adam')
 
-    parser.add_argument('--lr', type=float, default=0.007, metavar='LR',
+    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
 
     parser.add_argument('--lr_scheduler', type=str, default='poly',
@@ -122,7 +122,7 @@ def add_args(parser):
     parser.add_argument('--is_mobile', type=int, default=0,
                         help='whether the program is running on the FedML-Mobile server side')
 
-    parser.add_argument('--evaluation_frequency', type=int, default=1,
+    parser.add_argument('--evaluation_frequency', type=int, default=5,
                         help='Frequency of model evaluation on training dataset (Default: every 5th round)')
 
     parser.add_argument('--gpu_server_num', type=int, default=1,
@@ -135,7 +135,7 @@ def add_args(parser):
                         help='the gpu utilization file for servers and clients. If there is no \
                         gpu_util_file, gpu will not be used.')
 
-    parser.add_argument('--gpu_mapping_key', type=str, default="cluster_541",
+    parser.add_argument('--gpu_mapping_key', type=str, default="mapping_config1_5",
                         help='the key in gpu utilization file')
 
     parser.add_argument('--ci', type=int, default=0,
