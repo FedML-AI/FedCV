@@ -8,7 +8,6 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 from pathlib import Path, PurePath
-from typing import Literal, Callable, Optional, List, TypedDict, Sized
 
 from .utils import _download_file, _extract_file
 
