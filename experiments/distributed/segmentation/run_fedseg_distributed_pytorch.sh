@@ -39,7 +39,7 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --outstride $OUTPUT_STRIDE \
   --dataset $DATASET \
   --data_dir $DATA_DIR \
-  --checkname $CHECKNAME \
+  --checkname CHECKPOINT_NAME \
   --partition_method $DISTRIBUTION \
   --client_num_in_total $CLIENT_NUM \
   --client_num_per_round $WORKER_NUM \
