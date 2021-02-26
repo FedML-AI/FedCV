@@ -1,8 +1,8 @@
 import glob
 import os
+import pickle
 
 import numpy as np
-import scipy.io as sio
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -26,8 +26,9 @@ class CityscapesSegmentation(Dataset):
                 data_idxs: The list of indexes used to partition the dataset.
             """
         self.root_dir = root_dir
-        self.train_images = Path('{}/leftImg8bit_trainextra/{}'.format(root_dir, split))
+        self.train_images = Path('{}/leftImg8bit/{}'.format(root_dir, split))
         self.masks_dir = Path('{}/gtCoarse/{}'.format(root_dir, split))
+        self.targets_path = Path('{}/targets_{}.pickle'.format(root_dir, split))
         self.id_to_train_id = {-1: 255, 0: 255, 1: 255, 2: 255, 3: 255, 4: 255, 5: 255, 6: 255,
             7: 0, 8: 1, 9: 255, 10: 255, 11: 2, 12: 3, 13: 4,
             14: 255, 15: 255, 16: 255, 17: 5,
@@ -41,36 +42,37 @@ class CityscapesSegmentation(Dataset):
 
         self.__preprocess()
         self.__generate_targets()
+        if data_idxs is not None:
+            self.images = [self.images[i] for i in data_idxs]
+            self.masks = [self.masks[i] for i in data_idxs]
 
     def __preprocess(self):
-        self.img_paths = list()
-        self.mask_paths = list()
         for city in os.listdir(self.train_images):
-            self.img_paths.extend(sorted(glob.glob(Path('{}/{}/*.png'.format(self.train_images, city)))))
-            self.mask_paths.extend(sorted(glob.glob(Path('{}/{}/*_gtCoarse_labelIds.png'.format(self.masks_dir, city)))))
-        assert len(self.img_paths) == len(self.mask_paths)
+            self.images.extend(sorted(glob.glob('{}/{}/*.png'.format(self.train_images, city))))
+            self.masks.extend(sorted(glob.glob('{}/{}/*_gtCoarse_labelIds.png'.format(self.masks_dir, city))))
+        assert len(self.images) == len(self.masks)
 
     def __generate_targets(self):
         targets = list()
-        for i in self.mask_paths:
-            clss = list()
-            mask = np.asarray(Image.open(self.mask_paths[i]), dtype=np.int32)
-            for cls in self.classes:
-                if cls in mask[:,:]:
-                    clss.append(cls)
-            targets.append(np.asarray(clss).astype(np.uint8))
+        targets_dict = dict()
+        with open(self.targets_path, 'rb') as pickle_file:
+            targets_dict = pickle.load(pickle_file)
+        for mask_path in self.masks:
+            targets.append(targets_dict[mask_path.split('/')[-1]])
         self.targets = np.asarray(targets)
 
-
     def __getitem__(self, index):
-        img = Image.open(self.img_paths[index]).convert('RGB')
-        mask = Image.open(self.mask_paths[index])
+        img = Image.open(self.images[index]).convert('RGB')
+        mask = Image.open(self.masks[index])
         sample = {'image': img, 'label': mask}
 
         if self.transform is not None:
             sample = self.transform(sample)
         mask = sample['label']
-        for k, v in self.id_to_train_id:
+        for k, v in self.id_to_train_id.items():
             mask[mask == k] = v
         sample['label'] = mask
         return sample
+
+    def __len__(self):
+        return len(self.images)
