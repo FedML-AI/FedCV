@@ -41,10 +41,11 @@ class CityscapesSegmentation(Dataset):
         self.targets = None
 
         self.__preprocess()
-        self.__generate_targets()
         if data_idxs is not None:
             self.images = [self.images[i] for i in data_idxs]
             self.masks = [self.masks[i] for i in data_idxs]
+
+        self.__generate_targets()
 
     def __preprocess(self):
         for city in os.listdir(self.train_images):
