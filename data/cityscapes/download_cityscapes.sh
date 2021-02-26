@@ -31,4 +31,6 @@ rm leftImg8bit_trainextra.zip
 rm README*
 rm license.txt
 
+rm cookies.txt
+
 python process_targets.py
