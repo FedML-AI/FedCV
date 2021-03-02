@@ -26,7 +26,7 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 ./single_run_classification.sh "3"  ~/py36/bin/python " --dataset cifar100 --data_dir /home/datasets/cifar100 --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .99 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.1"
 
 
-
+./single_run_classification.sh "3"  ~/py36/bin/python " --dataset cifar100 --data_dir /home/datasets/cifar100 --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 450 --decay-epochs 2.4 --decay-rate .99 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.1"
 
 
 

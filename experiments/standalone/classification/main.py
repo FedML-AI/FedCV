@@ -16,6 +16,7 @@ import wandb
 
 from timm import create_model as timm_create_model
 from timm.models import resume_checkpoint, load_checkpoint, convert_splitbn_model
+from model.vision_transformer_task_specific_layer import CONFIGS, VisionTransformer
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
@@ -378,7 +379,14 @@ def create_model(args, model_name, output_dim):
         bn_tf=args.bn_tf,
         bn_momentum=args.bn_momentum,
         bn_eps=args.bn_eps)
-    else:
+    elif model_name == "visTransformer":
+        model_type = 'vit-B_16'
+        # pretrained on ImageNet (224x224), and fine-tuned on (384x384) high resolution.
+        config = CONFIGS[model_type]
+        logging.info("Vision Transformer Configuration: " + str(config))
+        model = VisionTransformer(config, 224, zero_head=True, num_classes=output_dim,
+                                  fine_tune_layer_num=0,
+                                  task_specific_layer_num=0)    else:
         raise Exception("no such model")
     return model
 

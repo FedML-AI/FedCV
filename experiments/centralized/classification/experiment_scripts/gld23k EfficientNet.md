@@ -33,7 +33,9 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 
 ./single_run_classification.sh "2" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.1"
 
+./single_run_classification.sh "2" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.3"
 
+./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.6"
 
 ## Pure with normal image transform
 
@@ -80,6 +82,12 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 ### SGD with all tricks
 ./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.03"
 
+./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.01"
 
+./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.1"
+
+./single_run_classification.sh "2" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.3"
+
+./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model efficientnet --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.6"
 
 
