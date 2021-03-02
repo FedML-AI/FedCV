@@ -13,9 +13,6 @@ import setproctitle
 import wandb
 import torch
 import torch.nn as nn
-from timm import create_model as timm_create_model
-from timm.models import resume_checkpoint, load_checkpoint, convert_splitbn_model
-from model.vision_transformer_task_specific_layer import CONFIGS, VisionTransformer
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
@@ -29,6 +26,9 @@ from data_preprocessing.cifar10.iid_data_loader import load_iid_cifar10
 from data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
 from data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
 from data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
+from timm import create_model as timm_create_model
+from timm.models import resume_checkpoint, load_checkpoint, convert_splitbn_model
+from model.classification.vision_transformer_task_specific_layer import CONFIGS, VisionTransformer
 
 
 from training.centralized_classification_trainer import ClassificationTrainer
@@ -371,7 +371,8 @@ def create_model(args, model_name, output_dim):
         logging.info("Vision Transformer Configuration: " + str(config))
         model = VisionTransformer(config, 224, zero_head=True, num_classes=output_dim,
                                   fine_tune_layer_num=0,
-                                  task_specific_layer_num=0)    else:
+                                  task_specific_layer_num=0)
+    else:
         raise Exception("no such model")
     return model
 

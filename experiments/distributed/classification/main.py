@@ -14,9 +14,6 @@ import torch
 import wandb
 from mpi4py import MPI
 
-from timm import create_model as timm_create_model
-from timm.models import resume_checkpoint, load_checkpoint, convert_splitbn_model
-from model.vision_transformer_task_specific_layer import CONFIGS, VisionTransformer
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
@@ -29,6 +26,9 @@ from data_preprocessing.cifar10.iid_data_loader import load_iid_cifar10
 from data_preprocessing.cifar10.data_loader import load_partition_data_cifar10
 from data_preprocessing.cifar100.data_loader import load_partition_data_cifar100
 from data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
+from timm import create_model as timm_create_model
+from timm.models import resume_checkpoint, load_checkpoint, convert_splitbn_model
+from model.classification.vision_transformer_task_specific_layer import CONFIGS, VisionTransformer
 
 from training.fedavg_classification_trainer import ClassificationTrainer
 
