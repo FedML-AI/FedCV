@@ -6,6 +6,9 @@ from PIL import Image
 import torch.utils.data as data
 from timm.data import Dataset, create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 
+from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
+    non_iid_partition_with_dirichlet_distribution
+
 
 def has_file_allowed_extension(filename, extensions):
     """Checks if a file is an allowed extension.
@@ -60,6 +63,46 @@ def make_dataset(dir, class_to_idx, extensions, num_classes=1000):
     return images, data_local_num_dict, net_dataidx_map
 
 
+
+def make_dataset_with_dirichlet_sampling(
+    dir, class_to_idx, extensions, client_num, num_classes=1000, alpha=0):
+    assert alpha > 0
+    images = []
+
+    data_local_num_dict = dict()
+    net_dataidx_map = dict()
+    sum_temp = 0
+    dir = os.path.expanduser(dir)
+
+    i_target = 0 
+    label_list = []     # Used for dirichlet sampling
+    for target in sorted(os.listdir(dir)):
+        if not (i_target < num_classes):
+            break
+        d = os.path.join(dir, target)
+        if not os.path.isdir(d):
+            continue
+        target_num = 0
+        for root, _, fnames in sorted(os.walk(d)):
+            for fname in sorted(fnames):
+                if has_file_allowed_extension(fname, extensions):
+                    path = os.path.join(root, fname)
+                    item = (path, class_to_idx[target])
+                    images.append(item)
+                    label_list.append(i_target)
+                    target_num += 1
+        net_dataidx_map[class_to_idx[target]] = (sum_temp, sum_temp + target_num)
+        data_local_num_dict[class_to_idx[target]] = target_num
+        sum_temp += target_num
+        i_target += 1
+
+
+    net_dataidx_map = non_iid_partition_with_dirichlet_distribution(
+        label_list=label_list, client_num=clien_num, classes=num_classes, alpha=alpha)
+
+
+
+
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
     with open(path, 'rb') as f:
@@ -86,12 +129,14 @@ def default_loader(path):
 
 class ImageNet(data.Dataset):
 
-    def __init__(self, data_dir, dataidxs=None, train=True, transform=None, target_transform=None, download=False):
+    def __init__(self, data_dir, dataidxs=None, train=True,
+                 transform=None, target_transform=None, download=False, client_num=100, alpha=None):
         """
             Generating this class too many times will be time-consuming.
             So it will be better calling this once and put it into ImageNet_truncated.
         """
         self.dataidxs = dataidxs
+        self.client_num = client_num
         self.train = train
         self.transform = transform
         self.target_transform = target_transform
@@ -102,15 +147,24 @@ class ImageNet(data.Dataset):
         else:
             self.data_dir = os.path.join(data_dir, 'val')
 
+        self.alpha = alpha
         self.all_data, self.data_local_num_dict, self.net_dataidx_map = self.__getdatasets__()
-        if dataidxs == None:
+        self.initial_local_data()
+
+    def initial_local_data(self):
+        if self.dataidxs == None:
             self.local_data = self.all_data
-        elif type(dataidxs) == int:
-            (begin, end) = self.net_dataidx_map[dataidxs]
-            self.local_data = self.all_data[begin: end]
+        elif type(self.dataidxs) == int:
+            if self.alpha is not None:
+                self.local_data = self.all_data[self.net_dataidx_map[self.dataidxs]]
+            else:
+                (begin, end) = self.net_dataidx_map[self.dataidxs]
+                self.local_data = self.all_data[begin: end]
         else:
+            # This is only suitable when not do dirichlet sampling
+            assert self.alpha is None
             self.local_data = []
-            for idxs in dataidxs:
+            for idxs in self.dataidxs:
                 (begin, end) = self.net_dataidx_map[idxs]
                 self.local_data += self.all_data[begin: end]
 
@@ -128,7 +182,12 @@ class ImageNet(data.Dataset):
 
         classes, class_to_idx = find_classes(self.data_dir)
         IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif']
-        all_data, data_local_num_dict, net_dataidx_map = make_dataset(self.data_dir, class_to_idx, IMG_EXTENSIONS)
+        if self.alpha is not None:
+            all_data, data_local_num_dict, net_dataidx_map = make_dataset_with_dirichlet_sampling(
+                self.data_dir, class_to_idx, IMG_EXTENSIONS, self.client_num, num_classes=1000, alpha=self.alpha
+            )
+        else:
+            all_data, data_local_num_dict, net_dataidx_map = make_dataset(self.data_dir, class_to_idx, IMG_EXTENSIONS)
         if len(all_data) == 0:
             raise (RuntimeError("Found 0 files in subfolders of: " + self.data_dir + "\n"
                                                                                      "Supported extensions are: " + ",".join(
@@ -161,12 +220,14 @@ class ImageNet(data.Dataset):
 
 class ImageNet100(data.Dataset):
 
-    def __init__(self, data_dir, dataidxs=None, train=True, transform=None, target_transform=None, download=False):
+    def __init__(self, data_dir, dataidxs=None, train=True,
+                 transform=None, target_transform=None, download=False, client_num=100, alpha=None):
         """
             Generating this class too many times will be time-consuming.
             So it will be better calling this once and put it into ImageNet_truncated.
         """
         self.dataidxs = dataidxs
+        self.client_num = client_num
         self.train = train
         self.transform = transform
         self.target_transform = target_transform
@@ -177,15 +238,25 @@ class ImageNet100(data.Dataset):
         else:
             self.data_dir = os.path.join(data_dir, 'val')
 
+        self.alpha = alpha
         self.all_data, self.data_local_num_dict, self.net_dataidx_map = self.__getdatasets__()
-        if dataidxs == None:
+        self.initial_local_data()
+
+
+    def initial_local_data(self):
+        if self.dataidxs == None:
             self.local_data = self.all_data
-        elif type(dataidxs) == int:
-            (begin, end) = self.net_dataidx_map[dataidxs]
-            self.local_data = self.all_data[begin: end]
+        elif type(self.dataidxs) == int:
+            if self.alpha is not None:
+                self.local_data = self.all_data[self.net_dataidx_map[self.dataidxs]]
+            else:
+                (begin, end) = self.net_dataidx_map[self.dataidxs]
+                self.local_data = self.all_data[begin: end]
         else:
+            # This is only suitable when not do dirichlet sampling
+            assert self.alpha is None
             self.local_data = []
-            for idxs in dataidxs:
+            for idxs in self.dataidxs:
                 (begin, end) = self.net_dataidx_map[idxs]
                 self.local_data += self.all_data[begin: end]
 
@@ -203,8 +274,13 @@ class ImageNet100(data.Dataset):
 
         classes, class_to_idx = find_classes(self.data_dir)
         IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif']
-        all_data, data_local_num_dict, net_dataidx_map = make_dataset(
-            self.data_dir, class_to_idx, IMG_EXTENSIONS, num_classes=100)
+        if self.alpha is not None:
+            all_data, data_local_num_dict, net_dataidx_map = make_dataset_with_dirichlet_sampling(
+                self.data_dir, class_to_idx, IMG_EXTENSIONS, self.client_num, num_classes=100, alpha=self.alpha
+            )
+        else:
+            all_data, data_local_num_dict, net_dataidx_map = make_dataset(
+                self.data_dir, class_to_idx, IMG_EXTENSIONS, num_classes=100)
         if len(all_data) == 0:
             raise (RuntimeError("Found 0 files in subfolders of: " + self.data_dir + "\n"
                                                                                      "Supported extensions are: " + ",".join(
@@ -238,9 +314,10 @@ class ImageNet100(data.Dataset):
 class ImageNet_truncated(data.Dataset):
 
     def __init__(self, imagenet_dataset: ImageNet, dataidxs, net_dataidx_map, train=True, transform=None,
-                 target_transform=None, download=False):
+                 target_transform=None, download=False, client_num=100, alpha=None):
 
         self.dataidxs = dataidxs
+        self.client_num = client_num
         self.train = train
         self.transform = transform
         self.target_transform = target_transform
@@ -248,16 +325,27 @@ class ImageNet_truncated(data.Dataset):
         self.net_dataidx_map = net_dataidx_map
         self.loader = default_loader
         self.all_data = imagenet_dataset.get_local_data()
-        if dataidxs == None:
+        self.alpha = alpha
+        self.initial_local_data()
+
+
+    def initial_local_data(self):
+        if self.dataidxs == None:
             self.local_data = self.all_data
-        elif type(dataidxs) == int:
-            (begin, end) = self.net_dataidx_map[dataidxs]
-            self.local_data = self.all_data[begin: end]
+        elif type(self.dataidxs) == int:
+            if self.alpha is not None:
+                self.local_data = self.all_data[self.net_dataidx_map[self.dataidxs]]
+            else:
+                (begin, end) = self.net_dataidx_map[self.dataidxs]
+                self.local_data = self.all_data[begin: end]
         else:
+            # This is only suitable when not do dirichlet sampling
+            assert self.alpha is None
             self.local_data = []
-            for idxs in dataidxs:
+            for idxs in self.dataidxs:
                 (begin, end) = self.net_dataidx_map[idxs]
                 self.local_data += self.all_data[begin: end]
+
 
     def __getitem__(self, index):
         """

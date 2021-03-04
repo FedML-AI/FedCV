@@ -278,34 +278,46 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
         train_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
                                 train=True,
-                                transform=transform_train) 
+                                transform=transform_train,
+                                client_num=client_number,
+                                alpha=partition_alpha) 
 
         test_dataset = ImageNet(data_dir=data_dir,
                                 dataidxs=None,
                                 train=False,
-                                transform=transform_test)
+                                transform=transform_test,
+                                client_num=client_number,
+                                alpha=partition_alpha)
         class_num = 1000
     elif dataset == 'ILSVRC2012-100':
         train_dataset = ImageNet100(data_dir=data_dir,
                                 dataidxs=None,
                                 train=True,
-                                transform=transform_train) 
+                                transform=transform_train,
+                                client_num=client_number,
+                                alpha=partition_alpha)
 
         test_dataset = ImageNet100(data_dir=data_dir,
                                 dataidxs=None,
                                 train=False,
-                                transform=transform_test) 
+                                transform=transform_test,
+                                client_num=client_number,
+                                alpha=partition_alpha)
         class_num = 100
     elif dataset == 'ILSVRC2012_hdf5':
         train_dataset = ImageNet_hdf5(data_dir=data_dir,
                                 dataidxs=None,
                                 train=True,
-                                transform=transform_train) 
+                                transform=transform_train,
+                                client_num=client_number,
+                                alpha=partition_alpha)
 
         test_dataset = ImageNet_hdf5(data_dir=data_dir,
                                 dataidxs=None,
                                 train=False,
-                                transform=transform_test) 
+                                transform=transform_test,
+                                client_num=client_number,
+                                alpha=partition_alpha)
         class_num = 1000
     else:
         raise NotImplementedError
@@ -335,24 +347,25 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
     test_data_local_dict = dict()
 
     for client_idx in range(client_number):
-        if client_number == 1000:
-            if dataset not in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
-                raise NotImplementedError("Only support 1000 clients for Full ILSVRC2012!")
-            dataidxs = client_idx
-            data_local_num_dict = class_num_dict
-        elif client_number == 100:
-            if dataset in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
-                dataidxs = [client_idx * 10 + i for i in range(10)]
-                data_local_num_dict[client_idx] = sum(class_num_dict[client_idx + i] for i in range(10))
-            elif dataset in ['ILSVRC2012-100']:
+        if partition_alpha is None:
+            if client_number == 1000:
+                if dataset not in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
+                    raise NotImplementedError("Only support 1000 clients for Full ILSVRC2012!")
                 dataidxs = client_idx
                 data_local_num_dict = class_num_dict
+            elif client_number == 100:
+                if dataset in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
+                    dataidxs = [client_idx * 10 + i for i in range(10)]
+                    data_local_num_dict[client_idx] = sum(class_num_dict[client_idx + i] for i in range(10))
+                elif dataset in ['ILSVRC2012-100']:
+                    dataidxs = client_idx
+                    data_local_num_dict = class_num_dict
+                else:
+                    raise NotImplementedError
             else:
-                raise NotImplementedError
+                raise NotImplementedError("Not support other client_number for now!")
         else:
-            raise NotImplementedError("Not support other client_number for now!")
-
-        local_data_num = data_local_num_dict[client_idx]
+            dataidxs = client_idx
 
         # logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
 
@@ -368,12 +381,18 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
         else:
             train_data_local, test_data_local = get_dataloader(train_dataset_local, test_dataset_local,
                                                                 train_bs=batch_size, test_bs=batch_size,
-                                                                dataidxs=None, net_dataidx_map=None, args=args)
+                                                                dataidxs=None, net_dataidx_map=net_dataidx_map,
+                                                                args=args)
 
         # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
         # client_idx, len(train_data_local), len(test_data_local)))
+        data_local_num_dict[client_idx] = len(train_dataset_local)
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
+
+
+        # local_data_num = data_local_num_dict[client_idx]
+
 
     logging.info("data_local_num_dict: %s" % data_local_num_dict)
     return train_data_num, test_data_num, train_data_global, test_data_global, \
