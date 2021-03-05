@@ -55,7 +55,7 @@ def add_args(parser):
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
 
-    parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
+    parser.add_argument('--partition_alpha', type=float, default=None, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
     parser.add_argument('--client_num_in_total', type=int, default=1000, metavar='NN',

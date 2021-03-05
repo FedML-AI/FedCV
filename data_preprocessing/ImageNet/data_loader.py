@@ -114,7 +114,7 @@ def get_timm_loader(dataset_train, dataset_test, args):
         dataset: self-defined dataset,
         return: timm loader
     """
-    logging.info("Using timm dataset and dataloader")
+    # logging.info("Using timm dataset and dataloader")
 
     # TODO not sure whether any problem here
     data_config = resolve_data_config(vars(args), model=None, verbose=args.rank == 0)
@@ -153,8 +153,8 @@ def get_timm_loader(dataset_train, dataset_test, args):
     else:
         raise NotImplementedError
 
-    logging.info("data transform, MEAN: {}, STD: {}.".format(
-        data_config['mean'], data_config['std']))
+    # logging.info("data transform, MEAN: {}, STD: {}.".format(
+    #     data_config['mean'], data_config['std']))
     loader_train = create_loader(
         dataset_train,
         input_size=data_config['input_size'],
@@ -349,10 +349,14 @@ def load_partition_data_ImageNet(dataset, data_dir, partition_method=None, parti
     for client_idx in range(client_number):
         if partition_alpha is None:
             if client_number == 1000:
-                if dataset not in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
-                    raise NotImplementedError("Only support 1000 clients for Full ILSVRC2012!")
-                dataidxs = client_idx
-                data_local_num_dict = class_num_dict
+                if dataset in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
+                    dataidxs = client_idx
+                    data_local_num_dict = class_num_dict
+                elif dataset in ['ILSVRC2012-100']:
+                    dataidxs = 0.1 * client_idx
+                    data_local_num_dict = class_num_dict
+                else:
+                    raise NotImplementedError
             elif client_number == 100:
                 if dataset in ['ILSVRC2012', 'ILSVRC2012_hdf5']:
                     dataidxs = [client_idx * 10 + i for i in range(10)]

@@ -57,7 +57,7 @@ def add_args(parser):
     parser.add_argument('--partition_method', type=str, default='hetero', metavar='N',
                         help='how to partition the dataset on local workers')
 
-    parser.add_argument('--partition_alpha', type=float, default=0.5, metavar='PA',
+    parser.add_argument('--partition_alpha', type=float, default=None, metavar='PA',
                         help='partition alpha (default: 0.5)')
 
     parser.add_argument('--client_num_in_total', type=int, default=1000, metavar='NN',
@@ -291,7 +291,7 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = load_partition_data_ImageNet(dataset=dataset_name, data_dir=args.data_dir,
-                                                 partition_method=None, partition_alpha=None,
+                                                 partition_method=None, partition_alpha=args.partition_alpha,
                                                  client_number=args.client_num_in_total, 
                                                  batch_size=args.batch_size, args=args)
 
@@ -310,7 +310,7 @@ def load_data(args, dataset_name):
         class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
                                                   fed_train_map_file=fed_train_map_file,
                                                   fed_test_map_file=fed_test_map_file,
-                                                  partition_method=None, partition_alpha=None,
+                                                  partition_method=None, partition_alpha=args.partition_alpha,
                                                   client_number=args.client_num_in_total, 
                                                   batch_size=args.batch_size, args=args)
     elif dataset_name == "gld160k":
@@ -325,7 +325,7 @@ def load_data(args, dataset_name):
         class_num = load_partition_data_landmarks(dataset=dataset_name, data_dir=args.data_dir,
                                                   fed_train_map_file=fed_train_map_file,
                                                   fed_test_map_file=fed_test_map_file,
-                                                  partition_method=None, partition_alpha=None,
+                                                  partition_method=None, partition_alpha=args.partition_alpha,
                                                   client_number=args.client_num_in_total, 
                                                   batch_size=args.batch_size, args=args)
     else:

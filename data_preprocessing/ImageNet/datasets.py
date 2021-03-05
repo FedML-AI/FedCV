@@ -1,6 +1,7 @@
 import os
 import os.path
 import logging
+import numpy as np
 
 from PIL import Image
 import torch.utils.data as data
@@ -28,6 +29,7 @@ def find_classes(dir):
     classes.sort()
     class_to_idx = {classes[i]: i for i in range(len(classes))}
     return classes, class_to_idx
+
 
 
 def make_dataset(dir, class_to_idx, extensions, num_classes=1000):
@@ -96,10 +98,11 @@ def make_dataset_with_dirichlet_sampling(
         sum_temp += target_num
         i_target += 1
 
-
+    label_list = np.array(label_list)
     net_dataidx_map = non_iid_partition_with_dirichlet_distribution(
-        label_list=label_list, client_num=clien_num, classes=num_classes, alpha=alpha)
+        label_list=label_list, client_num=client_num, classes=num_classes, alpha=alpha)
 
+    return images, data_local_num_dict, net_dataidx_map 
 
 
 
@@ -338,6 +341,20 @@ class ImageNet_truncated(data.Dataset):
             else:
                 (begin, end) = self.net_dataidx_map[self.dataidxs]
                 self.local_data = self.all_data[begin: end]
+        elif type(self.dataidxs) == float:
+            (begin_origin, end_origin) = self.net_dataidx_map[int(self.dataidxs // 10)]
+            # begin = begin_origin + int((end_origin - begin_origin) \
+            #     * (self.dataidxs - self.dataidxs // 10))
+            # end = begin_origin + int((end_origin - begin_origin) \
+            #     * (self.dataidxs - self.dataidxs // 10 + 0.1))
+            begin = begin_origin + int((end_origin - begin_origin) \
+                * (self.dataidxs - int(self.dataidxs)))
+            end = begin_origin + int((end_origin - begin_origin) \
+                * (self.dataidxs - int(self.dataidxs) + 0.1))
+            logging.info("Get sub dataset of one class into clients: begin: {}, end: {}".format(
+                begin, end
+            ))
+            self.local_data = self.all_data[begin: end]
         else:
             # This is only suitable when not do dirichlet sampling
             assert self.alpha is None
