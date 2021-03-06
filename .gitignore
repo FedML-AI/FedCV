@@ -11,3 +11,4 @@ wandb
 *.zip
 *.swp
 *.npz
+*.pth
