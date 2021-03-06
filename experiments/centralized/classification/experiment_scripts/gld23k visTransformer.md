@@ -18,6 +18,9 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 
 
 ## Pure with SGD
+./single_run_classification.sh "0" ~/anaconda3/envs/py36/bin/python " --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks --data_transform FLTransform --model visTransformer --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --lr 0.003"
+
+
 ./single_run_classification.sh "0" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model visTransformer --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --lr 0.003"
 
 ./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model visTransformer --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --lr 0.01"

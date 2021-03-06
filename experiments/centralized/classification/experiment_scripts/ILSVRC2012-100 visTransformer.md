@@ -23,12 +23,12 @@ MPI_HOST_FILE=DAAI_mpi_host_file_2
 ## Pure with SGD
 ```
 # running
-./single_run_classification.sh "0" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 -lr 0.003"
+srun --cpus-per-task 4 -w hkbugpusrv02 ./single_run_classification.sh "0" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model visTransformer --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --lr 0.003"
 
-./single_run_classification.sh "1" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5  --lr 0.01"
+srun --cpus-per-task 4 -w hkbugpusrv02 ./single_run_classification.sh "1" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model visTransformer --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5  --lr 0.01"
 
-./single_run_classification.sh "2" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5   --lr 0.03"
+./single_run_classification.sh "2" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model visTransformer --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5   --lr 0.03"
 
-./single_run_classification.sh "3" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5   --lr 0.06"
+./single_run_classification.sh "3" ~/py36/bin/python " --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset --data_transform FLTransform --model visTransformer --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5   --lr 0.06"
 
 

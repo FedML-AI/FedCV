@@ -1,40 +1,132 @@
-# ILSVRC2012-100
+# ILSVRC2012-100  mobilenet_v3
+
+# t716
+PYTHON=/nfs_home/zhtang/miniconda3/bin/python
+imagenet_data_dir=/nfs_home/datasets/ILSVRC2012
+gld_data_dir=/nfs_home/datasets/landmarks
+cifar10_data_dir=/nfs_home/datasets/cifar10
+mnist_data_dir=/nfs_home/datasets/mnist
+
+# esetstore
+PYTHON=/home/esetstore/pytorch1.4/bin/python
+imagenet_data_dir=/home/esetstore/dataset/ILSVRC2012_dataset
+gld_data_dir=/home/esetstore/dataset/gld
 
 
-
-
-
-
-
-
-
-
-# 10 clients
+# directly run
+# on scigpu
 ```
-
-# DAAI
-# srun -N2 -B 4-4:2-2 \
-# srun -w hkbugpusrv03 -n 21 -B 21:4 \
-salloc -w hkbugpusrv03 -n 21 --cpus-per-task=4 \
-mpiexec \
-    ~/py36/bin/python ./main.py \
-    --gpu_util_parse "hkbugpusrv03:6,5,5,5" \
-    --client_num_per_round 20 --client_num_in_total 100 \
+mpirun -np 3 -host scigpu11:3 \
+    ~/anaconda3/envs/py36/bin/python ./main.py \
+    --gpu_util_parse "scigpu11:2,1,0,0" \
+    --client_num_per_round 2 --client_num_in_total 100 \
     --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
     --frequency_of_the_test 10 \
-    --dataset ILSVRC2012-100 --data_dir /home/datasets/ILSVRC2012_dataset \
+    --dataset gld23k --data_dir ~/datasets/landmarks \
     --if-timm-dataset -b 16  --data_transform FLTransform \
-    --data_load_num_workers 2 \
-    --comm_round 1000  --epochs 1 \
+    --comm_round 300  --epochs 1 \
     --model mobilenet_v3 \
-    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
-    --opt rmsproptf --lr 0.001 --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 \
-    --sched step --decay-rounds 1 --decay-rate .992
+    --opt rmsproptf --lr 0.03 --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched step --decay-rounds 1 --decay-rate .97
+```
+## SGD
+### 10 clients, 1000 total, not dirichlet
 
+cd ~/zhtang/FedCV/experiments/distributed/classification
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu6:5,gpu7:4,gpu8:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu6:2,1,1,1;gpu7:1,1,1,1;gpu8:1,1,0,0" \
+    --client_num_per_round 10 --client_num_in_total 1000 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset ILSVRC2012-100 --data_dir /home/esetstore/dataset/ILSVRC2012_dataset \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model mobilenet_v3 \
+    --opt sgd --momentum 0  --lr 0.1 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched step --decay-rounds 1 --decay-rate .999
+
+
+cd ~/zhtang/FedCV/experiments/distributed/classification
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu9:5,gpu10:4,gpu8:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu9:2,1,1,1;gpu10:1,1,1,1;gpu8:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 1000 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset ILSVRC2012-100 --data_dir /home/esetstore/dataset/ILSVRC2012_dataset \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model mobilenet_v3 \
+    --opt sgd --momentum 0  --lr 0.01 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched step --decay-rounds 1 --decay-rate .999
+
+
+
+## SGD
+### 10 clients, 1000 total, not dirichlet
 ```
 
+cd ~/zhtang/FedCV/experiments/distributed/classification
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu6:5,gpu7:4,gpu8:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu6:2,1,1,1;gpu7:1,1,1,1;gpu8:1,1,0,0" \
+    --client_num_per_round 10 --client_num_in_total 1000 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset ILSVRC2012-100 --data_dir /home/esetstore/dataset/ILSVRC2012_dataset \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model mobilenet_v3 \
+    --opt momentum --lr 0.1 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched step --decay-rounds 1 --decay-rate .999
 
 
+cd ~/zhtang/FedCV/experiments/distributed/classification
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu9:5,gpu10:4,gpu8:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu9:2,1,1,1;gpu10:1,1,1,1;gpu8:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 1000 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset ILSVRC2012-100 --data_dir /home/esetstore/dataset/ILSVRC2012_dataset \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model mobilenet_v3 \
+    --opt momentum --lr 0.01 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched step --decay-rounds 1 --decay-rate .999
 
 
 
