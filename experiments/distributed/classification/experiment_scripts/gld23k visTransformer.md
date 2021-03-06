@@ -22,7 +22,7 @@ mpirun -np 3 -host scigpu10:2,scigpu13:1 \
     --dataset gld23k --data_dir ~/datasets/landmarks \
     --if-timm-dataset -b 16  --data_transform FLTransform \
     --comm_round 300  --epochs 1 \
-    --model visTransformer \
+    --model visTransformer --pretrained --pretrained_dir ./../../../model/classification/pretrained/ViT-B_16.npz \
     --opt rmsproptf --lr 0.03 --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 \
     --sched step --decay-rounds 1 --decay-rate .97
 ```

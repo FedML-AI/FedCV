@@ -22,7 +22,7 @@ mpirun -np 3 -host scigpu10:2,scigpu13:1 \
     --dataset gld23k --data_dir ~/datasets/landmarks \
     --if-timm-dataset -b 16  --data_transform FLTransform \
     --comm_round 300  --epochs 1 \
-    --model mobilenet_v3 \
+    --model mobilenet_v3  --pretrained \
     --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
     --opt rmsproptf --lr 0.03 --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 \
     --sched step --decay-rounds 1 --decay-rate .97

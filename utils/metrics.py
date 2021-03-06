@@ -15,7 +15,8 @@ class Metrics(object):
     @classmethod
     def get_metric_names(cls, topks, task):
         if task == "classification":
-            metric_names = ["Acc{}".format(topk) for topk in topks]
+            metric_names = ["Acc"]
+            # metric_names = ["Acc{}".format(topk) for topk in topks]
             metric_names += ["Loss"]
         elif task == "stackoverflow_lr":
             metric_names = ["Acc", "Loss", "Precision", "Recall"]
@@ -44,11 +45,13 @@ class Metrics(object):
         _, pred = output.topk(maxk, 1, True, True)
         pred = pred.t()
         correct = pred.eq(target.view(1, -1).expand_as(pred))
+        correct_k = correct[:1].view(-1).float().sum(0, keepdim=True)
+        metric_stat["Acc"] = correct_k.mul_(1.0 / batch_size).item()
 
-        for topk in self.topks:
-            correct_k = correct[:topk].view(-1).float().sum(0, keepdim=True)
-            # res.append(correct_k.mul_(100.0 / batch_size).item())
-            metric_stat["Acc{}".format(topk)] = correct_k.mul_(100.0 / batch_size).item()
+        # for topk in self.topks:
+        #     correct_k = correct[:topk].view(-1).float().sum(0, keepdim=True)
+        #     # res.append(correct_k.mul_(100.0 / batch_size).item())
+        #     metric_stat["Acc{}".format(topk)] = correct_k.mul_(100.0 / batch_size).item()
 
         return metric_stat
 

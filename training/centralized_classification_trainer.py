@@ -16,8 +16,27 @@ class ClassificationTrainer(ModelTrainer):
         # self.model = model
         self.args = args
 
-        self.optimizer = create_optimizer(args, model)
-        self.lr_scheduler, self.num_epochs = create_scheduler(args, self.optimizer)
+        if args.opt in ['rmsproptf']:
+            self.optimizer = create_optimizer(args, model)
+        elif args.opt in ['momentum']:
+             self.optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, 
+                                            weight_decay=args.wd, momentum=args.momentum)
+        elif args.opt in ['sgd']:
+             self.optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, 
+                                            weight_decay=args.wd)
+        elif args.opt == 'adam':
+            self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
+                                         lr=args.lr,
+                                         weight_decay=args.wd, amsgrad=True)
+        else:
+            raise NotImplementedError
+        if args.sched == 'step':
+            self.lr_scheduler, self.num_epochs = create_scheduler(args, self.optimizer)
+        elif args.sched == 'StepLR':
+            self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 
+                                                args.decay_epochs, args.decay_rate)
+        else:
+            raise NotImplementedError
         self.lr_scheduler.step(0)
 
         # setup loss function
@@ -85,8 +104,8 @@ class ClassificationTrainer(ModelTrainer):
                 metric_stat = metrics.evaluate(loss, log_probs, labels)
                 tracker.update_metrics(metric_stat, n_samples=labels.size(0))
                 if len(batch_loss) > 0:
-                    logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f} ACC1:{}'.format(
-                        self.id, epoch, batch_idx, sum(batch_loss) / len(batch_loss), metric_stat['Acc1']))
+                    logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f} ACC:{}'.format(
+                        self.id, epoch, batch_idx, sum(batch_loss) / len(batch_loss), metric_stat['Acc']))
             else:
                 if len(batch_loss) > 0:
                     logging.info('(Trainer_ID {}. Local Training Epoch: {}, Iter: {} \tLoss: {:.6f}'.format(
@@ -138,8 +157,8 @@ class ClassificationTrainer(ModelTrainer):
                 if (metrics is not None) and (tracker is not None):
                     metric_stat = metrics.evaluate(loss, pred, target)
                     tracker.update_metrics(metric_stat, n_samples=target.size(0))
-                    logging.info('(Trainer_ID {}. Local Testing Iter: {} \tLoss: {:.6f} ACC1:{}'.format(
-                        self.id, batch_idx, loss.item(), metric_stat['Acc1']))
+                    logging.info('(Trainer_ID {}. Local Testing Iter: {} \tLoss: {:.6f} ACC:{}'.format(
+                        self.id, batch_idx, loss.item(), metric_stat['Acc']))
                 else:
                     raise NotImplementedError
 
