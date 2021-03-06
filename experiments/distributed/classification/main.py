@@ -350,6 +350,10 @@ def create_model(args, model_name, output_dim):
     if model_name == 'mobilenet_v3':
         '''model_mode \in {LARGE: 5.15M, SMALL: 2.94M}'''
         # model = MobileNetV3(model_mode='LARGE')
+        # if args.pretrained:
+        #     checkpoint_path = args.pretrained_dir
+        # else:
+        #     checkpoint_path = ''
         model = timm_create_model(
         model_name="mobilenetv3_large_100",
         pretrained=args.pretrained,
@@ -362,8 +366,11 @@ def create_model(args, model_name, output_dim):
         bn_tf=args.bn_tf,
         bn_momentum=args.bn_momentum,
         bn_eps=args.bn_eps)
-
     elif model_name == 'efficientnet':
+        # if args.pretrained:
+        #     checkpoint_path = args.pretrained_dir
+        # else:
+        #     checkpoint_path = ''
         model = timm_create_model(
         model_name="efficientnet_b0",
         pretrained=args.pretrained,
@@ -376,6 +383,7 @@ def create_model(args, model_name, output_dim):
         bn_tf=args.bn_tf,
         bn_momentum=args.bn_momentum,
         bn_eps=args.bn_eps)
+
     elif model_name == "visTransformer":
         model_type = 'vit-B_16'
         # pretrained on ImageNet (224x224), and fine-tuned on (384x384) high resolution.
