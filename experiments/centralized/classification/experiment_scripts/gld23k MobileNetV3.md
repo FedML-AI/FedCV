@@ -28,24 +28,31 @@ MPI_HOST_FILE=scigpu_mpi_host_file
 ## Pure
 
 ```
-./single_run_classification.sh "0"   ~/anaconda3/envs/py36/bin/python " --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.03"
+./single_run_classification.sh "0"   ~/anaconda3/envs/py36/bin/python " --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks --data_transform FLTransform --model --pretrained mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.03"
 
-./single_run_classification.sh "1"   ~/anaconda3/envs/py36/bin/python " --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.01"
+./single_run_classification.sh "1"   ~/anaconda3/envs/py36/bin/python " --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks --data_transform FLTransform --model --pretrained mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.01"
 
-./single_run_classification.sh "2"   ~/anaconda3/envs/py36/bin/python " --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.003"
+./single_run_classification.sh "2"   ~/anaconda3/envs/py36/bin/python " --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks --data_transform FLTransform --model --pretrained mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 100 --decay-epochs 2.4 --decay-rate .97 --opt rmsproptf --opt-eps .001 --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.003"
 ```
 
 
 ## Pure with SGD
-./single_run_classification.sh "2" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.03"
+./single_run_classification.sh "3" ~/anaconda3/envs/py36/bin/python " --dataset gld23k --partition_method homo --data_dir /home/comp/20481896/datasets/landmarks --data_transform NormalTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.03"
 
-./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.01"
 
-./single_run_classification.sh "0" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.1"
 
-./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.3"
 
-./single_run_classification.sh "0" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.6"
+srun --cpus-per-task 4 -w hkbugpusrv04 ./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --partition_method homo --data_dir /home/datasets/landmarks --data_transform NormalTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.03"
+
+./single_run_classification.sh "1" /home/esetstore/pytorch1.4/bin/python " --dataset gld23k --partition_method homo --data_dir /home/esetstore/dataset/gld --data_transform NormalTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 32 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.03"
+
+
+./single_run_classification.sh "0" ~/py36/bin/python " --dataset gld23k --partition_method homo --data_dir /home/datasets/landmarks --data_transform NormalTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.1"
+
+./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --partition_method homo --data_dir /home/datasets/landmarks --data_transform NormalTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.3"
+
+./single_run_classification.sh "0" ~/py36/bin/python " --dataset gld23k --partition_method homo --data_dir /home/datasets/landmarks --data_transform NormalTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 --lr 0.6"
+
 
 ## Pure with normal image transform
 
@@ -87,14 +94,14 @@ MPI_HOST_FILE=scigpu_mpi_host_file
 ```
 
 ### SGD with all tricks
-./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.03"
+./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.03"
 
-./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.01"
+./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.01"
 
-./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.1"
+./single_run_classification.sh "1" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.1"
 
-./single_run_classification.sh "2" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.3"
+./single_run_classification.sh "2" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.3"
 
-./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.6"
+./single_run_classification.sh "3" ~/py36/bin/python " --dataset gld23k --data_dir /home/datasets/landmarks --data_transform FLTransform --model mobilenet_v3 --pretrained --if-timm-dataset -b 256 --sched step --epochs 400 --decay-epochs 2.4 --decay-rate .97 --opt momentum --warmup-lr 1e-6 --weight-decay 1e-5 --drop 0.2 --drop-connect 0.2 --model-ema --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --remode pixel --reprob 0.2 --lr 0.6"
 
 

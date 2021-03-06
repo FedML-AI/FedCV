@@ -1,7 +1,7 @@
 # ILSVRC2012-100  visTransfomer
 
 # t716
-PYTHON=/nfs_home/zhtang/miniconda3/bin/python
+PYTHON=/home/esetstore/pytorch1.4/bin/python
 imagenet_data_dir=/nfs_home/datasets/ILSVRC2012
 gld_data_dir=/nfs_home/datasets/landmarks
 cifar10_data_dir=/nfs_home/datasets/cifar10

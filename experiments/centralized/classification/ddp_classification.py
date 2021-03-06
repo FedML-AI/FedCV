@@ -106,6 +106,10 @@ def add_args(parser):
     parser.add_argument('--pretrained',action='store_true', default=False,
                         help='Start with pretrained version of specified network (if avail)')
 
+    parser.add_argument('--pretrained_dir',type=str,
+                        default="./../../../model/classification/pretrained/ViT-B_16.npz",
+                        help="Where to search for pretrained vit models.")
+
     parser.add_argument('--distributed', action='store_true', default=False,
                         help='If distributed training')
 

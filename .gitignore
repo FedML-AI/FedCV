@@ -10,3 +10,4 @@ wandb
 
 *.zip
 *.swp
+*.npz
