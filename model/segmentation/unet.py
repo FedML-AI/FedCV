@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from unet_utils import *
-from resnet import *
+from .unet_utils import *
+from .resnet import *
 
 
 class SegmentationHead(nn.Sequential):
@@ -48,8 +48,11 @@ class DecoderBlock(nn.Module):
         self.attention2 = Attention(attention_type, in_channels=out_channels)
 
     def forward(self, x, skip=None):
+        # print(x.shape)
         x = F.interpolate(x, scale_factor=2, mode="nearest")
+        # print(x.shape)
         if skip is not None:
+            # print(skip.shape)
             x = torch.cat([x, skip], dim=1)
             x = self.attention1(x)
         x = self.conv1(x)
@@ -171,7 +174,7 @@ class UNet(nn.Module):
         decoder_channels = [256, 128, 64, 32, 16],
         decoder_attention_type = None,
         in_channels = 3,
-        n_classes = 1,
+        n_classes = 21,
         activation = None,
         aux_params = None,
         output_stride = 16,
@@ -186,6 +189,10 @@ class UNet(nn.Module):
         # BatchNorm2d = SynchronizedBatchNorm2d
         # else:
         BatchNorm2d = nn.BatchNorm2d
+        
+        self.n_classes = n_classes
+
+        logging.info("Constructing UNet model with Backbone {0}, number of classes {1}, output stride {2}".format(backbone,n_classes,output_stride))
 
         self.encoder = FeatureExtractor(
             backbone=backbone, 
@@ -245,11 +252,11 @@ class UNet(nn.Module):
 
     def forward(self, x):
         features = self.encoder(x)
-        logging.info("After obtaining features from backbone : {}".format(features.shape))
+        # logging.info("After obtaining features from backbone : {}".format(features.shape))
         decoder_output = self.decoder(*features)
-        logging.info("After executing decoder : {}".format(decoder_output.shape))
+        # logging.info("After executing decoder : {}".format(decoder_output.shape))
         masks = self.segmentation_head(decoder_output)
-        logging.info("Final segmentation masks : {}".format(masks.shape))
+        # print("Final segmentation masks : {}".format(masks.shape))
         return masks
 
 

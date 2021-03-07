@@ -12,8 +12,8 @@ import torch.utils.model_zoo as model_zoo
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../FedML")))
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 # from fedml_api.model.cv.xception import *
-from resnet import *
-from mobilenet_v2 import *
+from .resnet import *
+from .mobilenet_v2 import *
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, dilation, BatchNorm):

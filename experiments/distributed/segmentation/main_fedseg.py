@@ -163,10 +163,9 @@ def load_data(process_id, args, dataset_name):
     return dataset
 
 
-def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])):
+def create_model(args, model_name, output_dim, img_size = torch.Size([512, 512])):
     if model_name == "deeplabV3_plus":
         model = DeepLabV3_plus(backbone=args.backbone,
-                          model_name=model_name,
                           image_size=img_size,
                           n_classes=output_dim,
                           output_stride=args.outstride,
@@ -189,8 +188,7 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
         model = UNet(backbone=args.backbone,
                      output_stride=args.outstride,
                      n_classes=output_dim,
-                     model_name=model_name,
-                     pretrained=args.pretrained)
+                     pretrained=args.backbone_pretrained)
 
         num_params = count_parameters(model)
         logging.info("Unet Model Size : {}".format(num_params))
