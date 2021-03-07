@@ -33,6 +33,7 @@ mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
     --opt momentum --lr 0.1 --warmup-lr 1e-6 --weight-decay 1e-5 \
     --sched StepLR --decay-rounds 1 --decay-rate .999
 
+
 cd ~/zhtang/FedCV/experiments/distributed/classification
 mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
     -mca pml ob1 -mca btl ^openib \
