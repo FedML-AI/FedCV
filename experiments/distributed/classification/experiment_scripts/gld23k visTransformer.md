@@ -29,6 +29,31 @@ mpirun -np 3 -host scigpu11:3 \
 
 ## SGD
 ### 10 clients
+cd ~/zhtang/FedCV/experiments/distributed/classification
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu6:5,gpu7:4,gpu8:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu6:2,1,1,1;gpu7:1,1,1,1;gpu8:1,1,0,0" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 8000  --epochs 1 \
+    --model visTransformer --pretrained --pretrained_dir ./../../../model/classification/pretrained/ViT-B_16.npz \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.003 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
+
+
 ```
 mpirun -np 11 -host gpu1:1,gpu3:1,gpu4:1,gpu5:1,gpu6:1,gpu7:1,gpu8:1,gpu9:1,gpu10:1,gpu11:1,gpu13:1 \
     -mca btl_tcp_if_include 192.168.0.101/24 \
