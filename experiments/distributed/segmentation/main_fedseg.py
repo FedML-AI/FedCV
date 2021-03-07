@@ -24,6 +24,7 @@ from FedML.fedml_api.distributed.fedseg.utils import count_parameters
 from data_preprocessing.pascal_voc_augmented.data_loader import load_partition_data_distributed_pascal_voc, \
     load_partition_data_pascal_voc
 from model.segmentation.deeplabV3_plus import DeepLabV3_plus
+from model.segmentation.unet import UNet
 from training.segmentation_trainer import SegmentationTrainer
 
 def add_args(parser):
@@ -181,6 +182,15 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])
 
         num_params = count_parameters(model)
         logging.info("DeepLabV3_plus Model Size : {}".format(num_params))
+    
+    ## TO DO
+    elif model_name == "unet":
+        model = UNet(backbone=args.backbone,
+                     output_stride=args.outstride,
+                     n_classes=output_dim,
+                     pretrained=args.pretrained)
+        
+
     else:
         raise ('Not Implemented Error')
 
