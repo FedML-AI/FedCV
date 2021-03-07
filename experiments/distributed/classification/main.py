@@ -342,7 +342,8 @@ def load_data(args, dataset_name):
         train_data_num, test_data_num, train_data_global, test_data_global, \
         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, \
         class_num = data_loader(args.dataset, args.data_dir, args.partition_method,
-                                args.partition_alpha, args.client_num_in_total, args.batch_size)
+                                args.partition_alpha, args.client_num_in_total, args.batch_size,
+                                args.data_transform)
 
 
 
