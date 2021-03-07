@@ -48,11 +48,8 @@ class DecoderBlock(nn.Module):
         self.attention2 = Attention(attention_type, in_channels=out_channels)
 
     def forward(self, x, skip=None):
-        print("Forward step 1 ",x.shape)
         x = F.interpolate(x, scale_factor=2, mode="nearest")
-        print("Forward step 2 x ",x.shape)
         if skip is not None:
-            print("Forward step 2 skip ",skip.shape)
             x = torch.cat([x, skip], dim=1)
             x = self.attention1(x)
         x = self.conv1(x)
@@ -209,7 +206,7 @@ class UNet(nn.Module):
 
         self.segmentation_head = SegmentationHead(
             in_channels=decoder_channels[-1],
-            out_channels=3,
+            out_channels=n_classes,
             activation=activation,
             kernel_size=3,
         )
