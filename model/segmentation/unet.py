@@ -219,7 +219,7 @@ class UNet(nn.Module):
         )
 
         
-    def initialize_decoder(module):
+    def initialize_decoder(self, module):
         for m in module.modules():
 
             if isinstance(m, nn.Conv2d):
@@ -237,7 +237,7 @@ class UNet(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
 
-    def initialize_head(module):
+    def initialize_head(self, module):
         for m in module.modules():
             if isinstance(m, (nn.Linear, nn.Conv2d)):
                 nn.init.xavier_uniform_(m.weight)
@@ -258,6 +258,37 @@ class UNet(nn.Module):
         masks = self.segmentation_head(decoder_output)
         # print("Final segmentation masks : {}".format(masks.shape))
         return masks
+
+    def get_1x_lr_params(self):
+            modules = [self.encoder.backbone]
+            for i in range(len(modules)):
+                for m in modules[i].named_modules():
+                    if isinstance(m[1], nn.Conv2d):
+                        for p in m[1].parameters():
+                            if p.requires_grad:
+                                yield p
+                    else:
+                        if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
+                                or isinstance(m[1], nn.BatchNorm2d):
+                            for p in m[1].parameters():
+                                if p.requires_grad:
+                                    yield p
+
+    def get_10x_lr_params(self):
+        modules = [self.decoder, self.segmentation_head]
+        for i in range(len(modules)):
+            for m in modules[i].named_modules():
+                if isinstance(m[1], nn.Conv2d):
+                    for p in m[1].parameters():
+                        if p.requires_grad:
+                            yield p
+                else:
+                    if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
+                            or isinstance(m[1], nn.BatchNorm2d):
+                        for p in m[1].parameters():
+                            if p.requires_grad:
+                                yield p
+
 
 
 if __name__ == "__main__":
