@@ -2,7 +2,7 @@ import os, sys, math
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../FedML")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../FedML")))
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 class Bottleneck(nn.Module):
@@ -46,20 +46,33 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, output_stride, BatchNorm, pretrained=True):
+    def __init__(self, block, layers, output_stride, BatchNorm, model_name, pretrained=True):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        blocks = [1, 2, 4]
-        if output_stride == 16:
-            strides = [1, 2, 2, 1]
-            dilations = [1, 1, 1, 2]
-        elif output_stride == 8:
-            strides = [1, 2, 1, 1]
-            dilations = [1, 1, 2, 4]
-        else:
-            raise NotImplementedError
+        
+        self.model_name = model_name
 
+        blocks = [1, 2, 4]
+        
+        if self.model_name == "deeplabV3_plus":
+
+            if output_stride == 16:
+                strides = [1, 2, 2, 1]
+                dilations = [1, 1, 1, 2]
+
+            elif output_stride == 8:
+                strides = [1, 2, 1, 1]
+                dilations = [1, 1, 2, 4]
+
+            else:
+                raise NotImplementedError
+
+        elif self.model_name == "unet":
+            strides = [1, 2, 2, 2]
+            dilations = [1, 1, 1, 2]
+        
         # Modules
+
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                 bias=False)
         self.bn1 = BatchNorm(64)
@@ -113,17 +126,41 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, input):
-        x = self.conv1(input)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
+        if self.model_name == "deeplabV3_plus":
+            x = self.conv1(input)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.maxpool(x)
 
-        x = self.layer1(x)
-        low_level_feat = x
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        return x, low_level_feat
+            x = self.layer1(x)
+            low_level_feat = x
+            x = self.layer2(x)
+            x = self.layer3(x)
+            x = self.layer4(x)
+            return x, low_level_feat
+        
+        elif self.model_name == "unet":
+            x = input.detach().clone()
+            stages = [
+                nn.Identity(),
+                nn.Sequential(self.conv1, self.bn1, self.relu),
+                nn.Sequential(self.maxpool, self.layer1),
+                self.layer2,
+                self.layer3,
+                self.layer4
+            ]
+
+            features = []
+            for i in range(len(stages)):
+                x = stages[i](x) 
+                # print("In resnet ",x.shape)
+                features.append(x)
+            
+            return features
+
+
+
+
 
     def _init_weight(self):
         for m in self.modules():
@@ -147,12 +184,12 @@ class ResNet(nn.Module):
         state_dict.update(model_dict)
         self.load_state_dict(state_dict)
 
-def ResNet101(output_stride, BatchNorm, pretrained=True):
+def ResNet101(output_stride, BatchNorm, model_name, pretrained=True):
     """Constructs a ResNet-101 model.
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = ResNet(Bottleneck, [3, 4, 23, 3], output_stride, BatchNorm, pretrained=pretrained)
+    model = ResNet(Bottleneck, [3, 4, 23, 3], output_stride, BatchNorm, model_name, pretrained=True)
     return model
 
 if __name__ == "__main__":
