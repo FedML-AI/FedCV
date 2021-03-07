@@ -77,8 +77,14 @@ class Cutout(object):
 
 
 def _data_transforms_cifar100():
-    CIFAR_MEAN = [0.5071, 0.4865, 0.4409]
-    CIFAR_STD = [0.2673, 0.2564, 0.2762]
+    if args.data_transform == 'FLTransform':
+        CIFAR_MEAN = [0.5, 0.5, 0.5]
+        CIFAR_STD = [0.5, 0.5, 0.5]
+    elif args.data_transform == 'NormalTransform':
+        CIFAR_MEAN = [0.5071, 0.4865, 0.4409]
+        CIFAR_STD = [0.2673, 0.2564, 0.2762]
+    else:
+        raise NotImplementedError
 
     train_transform = transforms.Compose([
         transforms.ToPILImage(),
