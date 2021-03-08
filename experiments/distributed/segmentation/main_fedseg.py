@@ -23,6 +23,8 @@ from FedML.fedml_api.distributed.fedseg.utils import count_parameters
 #from data_preprocessing.coco.segmentation.data_loader.py import load_partition_data_distributed_coco_segmentation, load_partition_data_coco_segmentation
 from data_preprocessing.pascal_voc_augmented.data_loader import load_partition_data_distributed_pascal_voc, \
     load_partition_data_pascal_voc
+from data_preprocessing.cityscapes.data_loader import load_partition_data_distributed_cityscapes, \
+    load_partition_data_cityscapes
 from model.segmentation.deeplabV3_plus import DeepLabV3_plus
 from training.segmentation_trainer import SegmentationTrainer
 
@@ -58,7 +60,7 @@ def add_args(parser):
     #                     help='segmentation categories (default: person, dog, cat)')
 
     parser.add_argument('--dataset', type=str, default='pascal_voc', metavar='N',
-                        choices=['coco', 'pascal_voc'],
+                        choices=['coco', 'pascal_voc', 'cityscapes'],
                         help='dataset used for training')
 
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
@@ -147,11 +149,14 @@ def add_args(parser):
 
 
 def load_data(process_id, args, dataset_name):
+    data_loader = None
     if dataset_name == "coco":
         pass
        # data_loader = load_partition_data_coco
     elif dataset_name == "pascal_voc":
         data_loader = load_partition_data_pascal_voc
+    elif dataset_name == 'cityscapes':
+        data_loader = load_partition_data_cityscapes
     train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict, \
     train_data_local_dict, test_data_local_dict, class_num = data_loader(args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
         args.client_num_in_total, args.batch_size)
