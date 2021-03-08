@@ -16,8 +16,8 @@ logger.setLevel(logging.INFO)
 
 
 def _data_transforms_cityscapes():
-    CITYSCAPES_MEAN = (0.28689529, 0.32513294, 0.28389176)
-    CITYSCAPES_STD = (0.17613647, 0.18099176, 0.17772235)
+    CITYSCAPES_MEAN = (0.485, 0.456, 0.406)
+    CITYSCAPES_STD = (0.229, 0.224, 0.225)
 
     train_transform = transforms.Compose([
         custom_transforms.RandomMirror(),
