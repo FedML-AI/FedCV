@@ -183,7 +183,7 @@ def create_model(args, model_name, output_dim, img_size = torch.Size([512, 512])
         num_params = count_parameters(model)
         logging.info("DeepLabV3_plus Model Size : {}".format(num_params))
     
-    ## TO DO
+
     elif model_name == "unet":
         model = UNet(backbone=args.backbone,
                      output_stride=args.outstride,
