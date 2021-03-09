@@ -9,9 +9,9 @@ import torch.utils.model_zoo as model_zoo
 
 
 # add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../FedML")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../FedML")))
 from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-from fedml_api.model.cv.xception import *
+# from fedml_api.model.cv.xception import *
 from .resnet import *
 from .mobilenet_v2 import *
 
@@ -166,11 +166,11 @@ class FeatureExtractor(nn.Module):
         return x, low_level_feat
 
     @staticmethod
-    def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True, num_classes=21):
+    def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True, num_classes=21, model_name="deeplabV3_plus"):
         if backbone == 'xception':
             return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
         elif backbone == 'resnet':
-            return ResNet101(output_stride, BatchNorm, pretrained=pretrained)
+            return ResNet101(output_stride, BatchNorm, model_name, pretrained=pretrained)
         elif backbone == 'mobilenet':
             backbone_model = MobileNetV2Encoder(output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
             backbone_model.low_level_features = backbone_model.features[0:4]
@@ -283,7 +283,7 @@ class DeepLabV3_plus(nn.Module):
 
 if __name__ == "__main__":
     model = DeepLabV3_plus(backbone='mobilenet', nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True)
-    image = torch.randn(16,3,513,513)
+    image = torch.randn(1,3,512,512)
     with torch.no_grad():
         output = model.forward(image)
     print(output.size())
