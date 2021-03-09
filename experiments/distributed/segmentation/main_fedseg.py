@@ -29,6 +29,17 @@ from model.segmentation.deeplabV3_plus import DeepLabV3_plus
 from training.segmentation_trainer import SegmentationTrainer
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def add_args(parser):
     """
     parser : argparse.ArgumentParser
@@ -44,21 +55,17 @@ def add_args(parser):
     parser.add_argument('--backbone', type=str, default='resnet',
                         help='employ with backbone (default: xception)')
 
-    parser.add_argument('--backbone_pretrained', type=bool, default=True,
+    parser.add_argument('--backbone_pretrained', type=str2bool, nargs='?', const=True, default=True,
                         help='pretrained backbone (default: True)')
 
-    parser.add_argument('--backbone_freezed', type=bool, default=False,
+    parser.add_argument('--backbone_freezed', type=str2bool, nargs='?', const=True, default=False,
                         help='Freeze backbone to extract features only once (default: False)')
 
-    parser.add_argument('--extract_feat', type=bool, default=False,
+    parser.add_argument('--extract_feat', type=str2bool, nargs='?', const=True, default=False,
                         help='Extract Feature Maps of (default: False) NOTE: --backbone_freezed has to be True for this argument to be considered')
 
     parser.add_argument('--outstride', type=int, default=16,
                         help='network output stride (default: 16)')
-
-    # # TODO: Remove this argument
-    # parser.add_argument('--categories', type=str, default='person,dog,cat',
-    #                     help='segmentation categories (default: person, dog, cat)')
 
     parser.add_argument('--dataset', type=str, default='pascal_voc', metavar='N',
                         choices=['coco', 'pascal_voc', 'cityscapes'],
@@ -81,16 +88,16 @@ def add_args(parser):
     parser.add_argument('--client_num_per_round', type=int, default=3, metavar='NN',
                         help='number of workers')
 
-    parser.add_argument('--save_client_model', type=bool, default=False,
+    parser.add_argument('--save_client_model', type=str2bool, nargs='?', const=True, default=False,
                         help='whether to save locally trained model by clients (default: False')
 
     parser.add_argument('--batch_size', type=int, default=10, metavar='N',
                         help='input batch size for training (default: 32)')
 
-    parser.add_argument('--sync_bn', type=bool, default=False,
-                        help='whether to use sync bn (default: auto)')
+    parser.add_argument('--sync_bn', type=str2bool, nargs='?', const=True, default=False,
+                        help='whether to use sync bn (default: False)')
 
-    parser.add_argument('--freeze_bn', type=bool, default=False,
+    parser.add_argument('--freeze_bn', type=str2bool, nargs='?', const=True, default=False,
                         help='whether to freeze bn parameters (default: False)')
 
     parser.add_argument('--client_optimizer', type=str, default='sgd',
