@@ -23,6 +23,8 @@ from FedML.fedml_api.distributed.fedseg.utils import count_parameters
 #from data_preprocessing.coco.segmentation.data_loader.py import load_partition_data_distributed_coco_segmentation, load_partition_data_coco_segmentation
 from data_preprocessing.pascal_voc_augmented.data_loader import load_partition_data_distributed_pascal_voc, \
     load_partition_data_pascal_voc
+from data_preprocessing.cityscapes.data_loader import load_partition_data_distributed_cityscapes, \
+    load_partition_data_cityscapes
 from model.segmentation.deeplabV3_plus import DeepLabV3_plus
 from training.segmentation_trainer import SegmentationTrainer
 
@@ -66,7 +68,7 @@ def add_args(parser):
                         help='network output stride (default: 16)')
 
     parser.add_argument('--dataset', type=str, default='pascal_voc', metavar='N',
-                        choices=['coco', 'pascal_voc'],
+                        choices=['coco', 'pascal_voc', 'cityscapes'],
                         help='dataset used for training')
 
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc',
@@ -146,6 +148,9 @@ def add_args(parser):
     parser.add_argument('--gpu_mapping_key', type=str, default="mapping_config1_5",
                         help='the key in gpu utilization file')
 
+    parser.add_argument('--image_size', type=int, default=512,
+                        help='Specifies the input size of the model (transformations are applied to scale or crop the image)')
+
     parser.add_argument('--ci', type=int, default=0,
                         help='CI')
 
@@ -155,14 +160,17 @@ def add_args(parser):
 
 
 def load_data(process_id, args, dataset_name):
+    data_loader = None
     if dataset_name == "coco":
         pass
        # data_loader = load_partition_data_coco
     elif dataset_name == "pascal_voc":
         data_loader = load_partition_data_pascal_voc
+    elif dataset_name == 'cityscapes':
+        data_loader = load_partition_data_cityscapes
     train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict, \
     train_data_local_dict, test_data_local_dict, class_num = data_loader(args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
-        args.client_num_in_total, args.batch_size)
+        args.client_num_in_total, args.batch_size, args.image_size)
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict,
     train_data_local_dict, test_data_local_dict, class_num]
@@ -170,7 +178,7 @@ def load_data(process_id, args, dataset_name):
     return dataset
 
 
-def create_model(args, model_name, output_dim, img_size = torch.Size([513, 513])):
+def create_model(args, model_name, output_dim, img_size):
     if model_name == "deeplabV3_plus":
         model = DeepLabV3_plus(backbone=args.backbone,
                           image_size=img_size,
@@ -279,7 +287,7 @@ if __name__ == "__main__":
     # create model.
     # Note if the model is DNN (e.g., ResNet), the training will be very slow.
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
-    model = create_model(args, model_name=args.model, output_dim=class_num)
+    model = create_model(args, model_name=args.model, output_dim=class_num, img_size=torch.Size([args.image_size, args.image_size]))
 
     # define my own trainer
     model_trainer = SegmentationTrainer(model, args)
