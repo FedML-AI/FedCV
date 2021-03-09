@@ -41,7 +41,7 @@ class SegmentationTrainer(ModelTrainer):
 
         if args.client_optimizer == "sgd":
 
-            if args.backbone_freezed:
+            if not args.backbone or args.backbone_freezed:
                 optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=args.lr * 10,
                                                  momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
             else:

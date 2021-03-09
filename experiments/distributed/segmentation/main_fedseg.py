@@ -27,6 +27,7 @@ from data_preprocessing.cityscapes.data_loader import load_partition_data_distri
     load_partition_data_cityscapes
 from model.segmentation.deeplabV3_plus import DeepLabV3_plus
 from model.segmentation.unet import UNet
+from model.segmentation.unet_plus_plus import UnetPlusPlus
 from training.segmentation_trainer import SegmentationTrainer
 
 
@@ -53,8 +54,8 @@ def add_args(parser):
     parser.add_argument('--model', type=str, default='deeplabV3_plus', metavar='N',
                         help='neural network used in training')
 
-    parser.add_argument('--backbone', type=str, default='resnet',
-                        help='employ with backbone (default: xception)')
+    parser.add_argument('--backbone', type=str, default=None,
+                        help='employ with backbone (default: None)')
 
     parser.add_argument('--backbone_pretrained', type=str2bool, nargs='?', const=True, default=True,
                         help='pretrained backbone (default: True)')
@@ -218,7 +219,13 @@ def create_model(args, model_name, output_dim, img_size):
 
         num_params = count_parameters(model)
         logging.info("Unet Model Size : {}".format(num_params))
-        
+
+    elif model_name == "unet_plusplus":
+        model = UnetPlusPlus(n_classes=output_dim,
+                             sync_bn=args.sync_bn)
+
+        num_params = count_parameters(model)
+        logging.info("UnetPlusPlus Model Size : {}".format(num_params))
 
     else:
         raise ('Not Implemented Error')
