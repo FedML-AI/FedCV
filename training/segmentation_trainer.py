@@ -3,7 +3,7 @@ import sys, os
 
 import numpy as np
 import torch
-from torch import nn
+import wandb
 
 # add the FedML root directory to the python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
@@ -12,6 +12,10 @@ from FedML.fedml_api.distributed.fedseg.utils import SegmentationLosses, Evaluat
 
 
 class SegmentationTrainer(ModelTrainer):
+    def __init__(self, model, args=None):
+        super(SegmentationTrainer, self).__init__(model, args)
+        self.best_mIoU = 0
+
     def get_model_params(self):
         if self.args.backbone_freezed:
             logging.info('Initializing model; Backbone Freezed')
@@ -115,6 +119,10 @@ class SegmentationTrainer(ModelTrainer):
         test_mIoU = evaluator.Mean_Intersection_over_Union()
         test_FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
         test_loss = test_loss / test_total
+
+        if test_mIoU > self.best_mIoU:
+            self.best_mIoU = test_mIoU
+            wandb.run.summary["best_mIoU"] = self.best_mIoU
 
         logging.info("Trainer_ID={0}, test_acc={1}, test_acc_class={2}, test_mIoU={3}, test_FWIoU={4}, test_loss={5}".format(
             self.id, test_acc, test_acc_class, test_mIoU, test_FWIoU, test_loss))
