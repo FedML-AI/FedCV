@@ -28,7 +28,7 @@ def _data_transforms_pascal_voc(image_size):
     ])
 
     val_transform = transforms.Compose([
-        custom_transforms.FixedScaleCrop(513),
+        custom_transforms.FixedScaleCrop(512),
         custom_transforms.ToTensor(),
         custom_transforms.Normalize(mean=PASCAL_VOC_MEAN, std=PASCAL_VOC_STD),
     ])

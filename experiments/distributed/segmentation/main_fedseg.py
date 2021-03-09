@@ -26,6 +26,7 @@ from data_preprocessing.pascal_voc_augmented.data_loader import load_partition_d
 from data_preprocessing.cityscapes.data_loader import load_partition_data_distributed_cityscapes, \
     load_partition_data_cityscapes
 from model.segmentation.deeplabV3_plus import DeepLabV3_plus
+from model.segmentation.unet import UNet
 from training.segmentation_trainer import SegmentationTrainer
 
 
@@ -197,6 +198,18 @@ def create_model(args, model_name, output_dim, img_size):
 
         num_params = count_parameters(model)
         logging.info("DeepLabV3_plus Model Size : {}".format(num_params))
+    
+
+    elif model_name == "unet":
+        model = UNet(backbone=args.backbone,
+                     output_stride=args.outstride,
+                     n_classes=output_dim,
+                     pretrained=args.backbone_pretrained)
+
+        num_params = count_parameters(model)
+        logging.info("Unet Model Size : {}".format(num_params))
+        
+
     else:
         raise ('Not Implemented Error')
 
