@@ -28,7 +28,7 @@ def _data_transforms_cityscapes(image_size):
     ])
 
     val_transform = transforms.Compose([
-        custom_transforms.FixedScaleCrop(513),
+        custom_transforms.FixedScaleCrop(image_size),
         custom_transforms.ToTensor(),
         custom_transforms.Normalize(mean=CITYSCAPES_MEAN, std=CITYSCAPES_STD),
     ])
