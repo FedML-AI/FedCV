@@ -221,7 +221,7 @@ class DeepLabV3_plus(nn.Module):
 
         self.n_classes = n_classes
         self.feature_extractor = FeatureExtractor(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained, num_classes=n_classes)
-        self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size = torch.Size([513, 513]), output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
+        self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size=image_size, output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
 
         self.freeze_bn = freeze_bn
 
