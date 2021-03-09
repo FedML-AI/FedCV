@@ -15,13 +15,13 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def _data_transforms_cityscapes():
+def _data_transforms_cityscapes(image_size):
     CITYSCAPES_MEAN = (0.485, 0.456, 0.406)
     CITYSCAPES_STD = (0.229, 0.224, 0.225)
 
     train_transform = transforms.Compose([
         custom_transforms.RandomMirror(),
-        custom_transforms.RandomScaleCrop(513, 513),
+        custom_transforms.RandomScaleCrop(image_size, image_size),
         custom_transforms.RandomGaussianBlur(),
         custom_transforms.ToTensor(),
         custom_transforms.Normalize(mean=CITYSCAPES_MEAN, std=CITYSCAPES_STD),
@@ -37,17 +37,17 @@ def _data_transforms_cityscapes():
 
 
 # for centralized training
-def get_dataloader(_, data_dir, train_bs, test_bs, data_idxs=None):
-    return get_dataloader_cityscapes(data_dir, train_bs, test_bs, data_idxs)
+def get_dataloader(_, data_dir, train_bs, test_bs, image_size, data_idxs=None):
+    return get_dataloader_cityscapes(data_dir, train_bs, test_bs, image_size, data_idxs)
 
 
 # for local devices
-def get_dataloader_test(data_dir, train_bs, test_bs, data_idxs_train=None, data_idxs_test=None):
-    return get_dataloader_cityscapes_test(data_dir, train_bs, test_bs, data_idxs_train, data_idxs_test)
+def get_dataloader_test(data_dir, train_bs, test_bs, image_size, data_idxs_train=None, data_idxs_test=None):
+    return get_dataloader_cityscapes_test(data_dir, train_bs, test_bs, image_size, data_idxs_train, data_idxs_test)
 
 
-def get_dataloader_cityscapes(data_dir, train_bs, test_bs, data_idxs=None):
-    transform_train, transform_test = _data_transforms_cityscapes()
+def get_dataloader_cityscapes(data_dir, train_bs, test_bs, image_size, data_idxs=None):
+    transform_train, transform_test = _data_transforms_cityscapes(image_size)
 
     train_ds = CityscapesSegmentation(data_dir,
                                               split='train_extra',
@@ -64,8 +64,8 @@ def get_dataloader_cityscapes(data_dir, train_bs, test_bs, data_idxs=None):
     return train_dl, test_dl, len(train_ds.classes)
 
 
-def get_dataloader_cityscapes_test(data_dir, train_bs, test_bs, data_idxs_train=None, data_idxs_test=None):
-    transform_train, transform_test = _data_transforms_cityscapes()
+def get_dataloader_cityscapes_test(data_dir, train_bs, test_bs, image_size, data_idxs_train=None, data_idxs_test=None):
+    transform_train, transform_test = _data_transforms_cityscapes(image_size)
 
     train_ds = CityscapesSegmentation(data_dir,
                                               split='train_extra',
@@ -83,8 +83,8 @@ def get_dataloader_cityscapes_test(data_dir, train_bs, test_bs, data_idxs_train=
     return train_dl, test_dl, len(train_ds.classes)
 
 
-def load_cityscapes_data(data_dir):
-    transform_train, transform_test = _data_transforms_cityscapes()
+def load_cityscapes_data(data_dir, image_size):
+    transform_train, transform_test = _data_transforms_cityscapes(image_size)
 
     train_ds = CityscapesSegmentation(data_dir, split='train_extra', transform=transform_train)
     test_ds = CityscapesSegmentation(data_dir, split='val', transform=transform_test)
@@ -93,10 +93,10 @@ def load_cityscapes_data(data_dir):
 
 
 # Get a partition map for each client
-def partition_data(data_dir, partition, n_nets, alpha):
+def partition_data(data_dir, partition, n_nets, alpha, image_size):
     logging.info("********************* Partitioning data **********************")
     net_data_idx_map = None
-    train_images, train_targets, train_categories, _, __, ___ = load_cityscapes_data(data_dir)
+    train_images, train_targets, train_categories, _, __, ___ = load_cityscapes_data(data_dir, image_size)
     n_train = len(train_images)  # Number of training samples
 
     if partition == "homo":
@@ -119,17 +119,18 @@ def partition_data(data_dir, partition, n_nets, alpha):
 
 
 def load_partition_data_distributed_cityscapes(process_id, dataset, data_dir, partition_method, partition_alpha,
-                                               client_number, batch_size):
+                                               client_number, batch_size, image_size):
     net_data_idx_map, train_data_cls_counts = partition_data(data_dir,
                                                              partition_method,
                                                              client_number,
-                                                             partition_alpha)
+                                                             partition_alpha,
+                                                             image_size)
 
     train_data_num = sum([len(net_data_idx_map[r]) for r in range(client_number)])
 
     # get global test data
     if process_id == 0:
-        train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+        train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size)
         logging.info("Number of global train batches: {} and test batches: {}".format(len(train_data_global),
                                                                                       len(test_data_global)))
 
@@ -144,7 +145,7 @@ def load_partition_data_distributed_cityscapes(process_id, dataset, data_dir, pa
         local_data_num = len(data_idxs)
         logging.info("Total number of local images: {} in client ID {}".format(local_data_num, process_id))
         # training batch size = 64; algorithms batch size = 32
-        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
+        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size,
                                                                       data_idxs)
         logging.info(
             "Number of local train batches: {} and test batches: {} in client ID {}".format(len(train_data_local),
@@ -161,16 +162,17 @@ def load_partition_data_distributed_cityscapes(process_id, dataset, data_dir, pa
 
 
 # Called from main_fedseg
-def load_partition_data_cityscapes(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size):
+def load_partition_data_cityscapes(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size, image_size):
     net_data_idx_map, train_data_cls_counts = partition_data(data_dir,
                                                              partition_method,
                                                              client_number,
-                                                             partition_alpha)
+                                                             partition_alpha,
+                                                             image_size)
 
     train_data_num = sum([len(net_data_idx_map[r]) for r in range(client_number)])
 
     # Global train and test data
-    train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+    train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size)
     logging.info(
         "Number of global train batches: {} and test batches: {}".format(len(train_data_global), len(test_data_global)))
 
@@ -189,7 +191,7 @@ def load_partition_data_cityscapes(dataset, data_dir, partition_method, partitio
         data_local_num_dict[client_idx] = local_data_num
 
         # training batch size = 64; algorithms batch size = 32
-        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
+        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size,
                                                                       data_idxs)
         logging.info(
             "Number of local train batches: {} and test batches: {} in client ID {}".format(len(train_data_local),

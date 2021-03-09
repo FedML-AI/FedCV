@@ -9,18 +9,19 @@ BACKBONE=$6
 BACKBONE_PRETRAINED=$7
 BACKBONE_FREEZED=$8
 OUTPUT_STRIDE=$9
-DISTRIBUTION=${10}
-ROUND=${11}
-EPOCH=${12}
-BATCH_SIZE=${13}
-CLIENT_OPTIMIZER=${14}
-LR=${15}
-DATASET=${16}
-DATA_DIR=${17}
-EVALUATION_FREQUENCY=${18}
-GPU_MAPPING_KEY=${19}
-CHECKPOINT_NAME=${20}
-CI=${21}
+IMAGE_SIZE=${10}
+DISTRIBUTION=${11}
+ROUND=${12}
+EPOCH=${13}
+BATCH_SIZE=${14}
+CLIENT_OPTIMIZER=${15}
+LR=${16}
+DATASET=${17}
+DATA_DIR=${18}
+EVALUATION_FREQUENCY=${19}
+GPU_MAPPING_KEY=${20}
+CHECKPOINT_NAME=${21}
+CI=${22}
 
 echo $MODEL
 echo $BACKBONE
@@ -39,6 +40,7 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --outstride $OUTPUT_STRIDE \
   --dataset $DATASET \
   --data_dir $DATA_DIR \
+  --image_size $IMAGE_SIZE \
   --checkname $CHECKPOINT_NAME \
   --partition_method $DISTRIBUTION \
   --client_num_in_total $CLIENT_NUM \
