@@ -1,19 +1,12 @@
-import os, sys
-import numpy as np
 import math
 import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.model_zoo as model_zoo
 
-
-# add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../FedML")))
-from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-# from fedml_api.model.cv.xception import *
-from .resnet import *
-from .mobilenet_v2 import *
+from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from model.segmentation.resnet import ResNet101
+from model.segmentation.mobilenet_v2 import MobileNetV2Encoder, IntermediateLayerGetter
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, dilation, BatchNorm):
@@ -166,10 +159,8 @@ class FeatureExtractor(nn.Module):
         return x, low_level_feat
 
     @staticmethod
-    def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True, num_classes=21, model_name="deeplabV3_plus"):
-        if backbone == 'xception':
-            return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
-        elif backbone == 'resnet':
+    def build_backbone(backbone='resnet', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True, num_classes=21, model_name="deeplabV3_plus"):
+        if backbone == 'resnet':
             return ResNet101(output_stride, BatchNorm, model_name, pretrained=pretrained)
         elif backbone == 'mobilenet':
             backbone_model = MobileNetV2Encoder(output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
@@ -215,13 +206,13 @@ class DeepLabV3_plus(nn.Module):
             output_stride = 8        
 
         if sync_bn == True:
-            BatchNorm2d = SynchronizedBatchNorm2d
+            self.BatchNorm2d = SynchronizedBatchNorm2d
         else:
-            BatchNorm2d = nn.BatchNorm2d
+            self.BatchNorm2d = nn.BatchNorm2d
 
         self.n_classes = n_classes
-        self.feature_extractor = FeatureExtractor(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained, num_classes=n_classes)
-        self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size=image_size, output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
+        self.feature_extractor = FeatureExtractor(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=self.BatchNorm2d, pretrained=pretrained, num_classes=n_classes)
+        self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size=image_size, output_stride=output_stride, BatchNorm=self.BatchNorm2d, num_classes=n_classes)
 
         self.freeze_bn = freeze_bn
 
@@ -236,7 +227,7 @@ class DeepLabV3_plus(nn.Module):
 
     def _freeze_bn(self):
         for m in self.modules():
-            if isinstance(m, BatchNorm2d):
+            if isinstance(m, self.BatchNorm2d):
                 m.eval()
 
     def _init_weight(self):
@@ -244,7 +235,7 @@ class DeepLabV3_plus(nn.Module):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, BatchNorm2d):
+            elif isinstance(m, self.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 

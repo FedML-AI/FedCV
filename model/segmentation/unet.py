@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .unet_utils import *
-from .resnet import *
+from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from model.segmentation.unet_utils import Conv2dReLU, Activation, Attention
+from model.segmentation.resnet import ResNet101
 
 
 class SegmentationHead(nn.Sequential):
@@ -290,9 +291,8 @@ class UNet(nn.Module):
                                 yield p
 
 
-
 if __name__ == "__main__":
-    image = torch.randn(16,3,512,512)
+    image = torch.randn(16, 3, 512, 512)
     model = UNet(backbone="resnet", output_stride=16, n_classes=1, pretrained=False)
     with torch.no_grad():
         output = model.forward(image)
