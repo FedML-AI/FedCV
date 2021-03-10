@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser.add_argument('--alpha', type=float, default=0.5, help='Partition Alpha')
     parser.add_argument('--data_dir', type=str, default='/home/chaoyanghe/BruteForce/FedML/data/pascal_voc'
                                                         '/benchmark_RELEASE', help='Dataset directory')
-    parser.add_argument('--dataset', type=str, default='pascal', help="Name of dataset")
+    parser.add_argument('--dataset', type=str, default='pascal_voc', help="Name of dataset")
 
     args = parser.parse_args()
 
