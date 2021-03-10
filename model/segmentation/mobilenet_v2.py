@@ -1,13 +1,10 @@
-import os
-import sys
 from collections import OrderedDict
 
 from torch import nn
 from torchvision.models.utils import load_state_dict_from_url
 import torch.nn.functional as F
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../FedML")))
-from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 ##############################################################################
 # The following implementation was taken from the following repo with slight #
