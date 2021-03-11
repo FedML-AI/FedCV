@@ -169,6 +169,9 @@ def add_args(parser):
 
 
     # Learning rate schedule parameters
+    parser.add_argument('--sched_fixed', default=None, type=str, metavar='SCHEDULER',
+                        help='just a label to indicate experiment')
+
     parser.add_argument('--sched', default=None, type=str, metavar='SCHEDULER',
                         help='LR scheduler (default: "step"')
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
