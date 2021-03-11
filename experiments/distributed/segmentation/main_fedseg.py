@@ -13,6 +13,7 @@ import torch
 import wandb
 
 # add the FedML root directory to the python path
+from datasets.segmentation.segmentation_data_loader_factory import SegmentationDataLoaderFactory
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
@@ -161,17 +162,25 @@ def add_args(parser):
 
 
 def load_data(process_id, args, dataset_name):
-    data_loader = None
-    if dataset_name == "coco":
-        pass
-       # data_loader = load_partition_data_coco
-    elif dataset_name == "pascal_voc":
-        data_loader = load_partition_data_pascal_voc
-    elif dataset_name == 'cityscapes':
-        data_loader = load_partition_data_cityscapes
+    # data_loader = None
+    # if dataset_name == "coco":
+    #     pass
+    #    # data_loader = load_partition_data_coco
+    # elif dataset_name == "pascal_voc":
+    #     data_loader = load_partition_data_pascal_voc
+    # elif dataset_name == 'cityscapes':
+    #     data_loader = load_partition_data_cityscapes
+    data_loader_args = {
+        'data_dir': args.data_dir,
+        'train_batch_size': args.batch_size,
+        'val_batch_size': args.batch_size,
+        'image_size': args.image_size,
+    }
+    data_loader = SegmentationDataLoaderFactory.get_data_loader(args.dataset,)
     train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict, \
-    train_data_local_dict, test_data_local_dict, class_num = data_loader(args.dataset, args.data_dir, args.partition_method, args.partition_alpha,
-        args.client_num_in_total, args.batch_size, args.image_size)
+    train_data_local_dict, test_data_local_dict, class_num = data_loader.load_partition_data(args.partition_method,
+                                                                                             args.partition_alpha,
+                                                                                             args.client_num_in_total)
 
     dataset = [train_data_num, test_data_num, train_data_global, test_data_global, data_local_num_dict,
     train_data_local_dict, test_data_local_dict, class_num]
