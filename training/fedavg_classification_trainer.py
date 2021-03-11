@@ -64,6 +64,14 @@ class ClassificationTrainer(ModelTrainer):
         else:
             raise NotImplementedError
 
+        # self.lr_scheduler.step(epoch=epoch + 1, metric=None)
+
+        # This aims to make scheduler of torch works when scheduler is put before optimizer.
+        # Please refer to pytorch document.
+        self.optimizer._step_count = 2
+        self.lr_scheduler._step_count = 2
+        self.lr_scheduler.step(epoch=args.round_idx)
+
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
@@ -82,8 +90,7 @@ class ClassificationTrainer(ModelTrainer):
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
                 logging.info('(Trainer_ID {}. Local Training Epoch: {} \tLoss: {:.6f}'.format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)))
-        # self.lr_scheduler.step(epoch=epoch + 1, metric=None)
-        self.lr_scheduler.step(epoch=args.round_idx)
+
 
 
     def test(self, test_data, device, args):
