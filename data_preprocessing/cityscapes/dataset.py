@@ -86,15 +86,20 @@ class CityscapesSegmentation(Dataset):
 if __name__ == '__main__':
     dataset = CityscapesSegmentation()
     print('Train Extra/Coarse: {}'.format(len(dataset)))
+    assert len(dataset) == 19998
 
     dataset = CityscapesSegmentation(split='train')
     print('Train/Coarse: {}'.format(len(dataset)))
+    assert len(dataset) == 2975
 
     dataset = CityscapesSegmentation(split='val')
     print('Val/Coarse: {}'.format(len(dataset)))
+    assert len(dataset) == 500
 
     dataset = CityscapesSegmentation(split='train', annotation_type='gtFine')
-    print('Train Extra/Coarse: {}'.format(len(dataset)))
+    print('Train/Fine: {}'.format(len(dataset)))
+    assert len(dataset) == 2975
 
-    dataset = CityscapesSegmentation(split='test', annotation_type='gtFine')
-    print('Train Extra/Coarse: {}'.format(len(dataset)))
+    dataset = CityscapesSegmentation(split='val', annotation_type='gtFine')
+    print('Val/Fine: {}'.format(len(dataset)))
+    assert len(dataset) == 500
