@@ -12,7 +12,7 @@ from pathlib import Path
 class CityscapesSegmentation(Dataset):
 
     def __init__(self,
-                 root_dir='../../../data/cityscapes',
+                 root_dir='../../data/cityscapes',
                  split='train_extra',
                  transform=None,
                  data_idxs=None):

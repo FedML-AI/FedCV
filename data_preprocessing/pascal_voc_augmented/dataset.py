@@ -15,11 +15,11 @@ from .utils import _download_file, _extract_file
 class PascalVocAugmentedSegmentation(Dataset):
 
     def __init__(self,
-                 root_dir = '../../../data/pascal_voc_augmented',
-                 split = 'train',
-                 download_dataset = False,
-                 transform = None,
-                 data_idxs = None):
+                 root_dir='../../data/pascal_voc_augmented',
+                 split='train',
+                 download_dataset=False,
+                 transform=None,
+                 data_idxs=None):
         """
         The dataset class for Pascal VOC Augmented Dataset.
 
