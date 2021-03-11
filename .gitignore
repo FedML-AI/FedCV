@@ -8,3 +8,4 @@
 wandb
 
 *.zip
+*.log
