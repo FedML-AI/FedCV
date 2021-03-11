@@ -1,6 +1,7 @@
 """
 Refer https://github.com/qubvel/segmentation_models.pytorch
 """
+import os, sys
 import logging
 
 import torch
@@ -10,6 +11,8 @@ import torch.nn.functional as F
 from .unet_utils import *
 from .resnet import *
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../FedML")))
+from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 class SegmentationHead(nn.Sequential):
 
@@ -179,16 +182,14 @@ class UNet(nn.Module):
         aux_params = None,
         output_stride = 16,
         pretrained=False,
-        BatchNorm=nn.BatchNorm2d,
-        # sync_bn=False
+        sync_bn=False
     ):
         super(UNet, self).__init__()
 
-        ## TO DO
-        # if sync_bn == True:
-        # BatchNorm2d = SynchronizedBatchNorm2d
-        # else:
-        BatchNorm2d = nn.BatchNorm2d
+        if sync_bn == True:
+            BatchNorm2d = SynchronizedBatchNorm2d
+        else:
+            BatchNorm2d = nn.BatchNorm2d
         
         self.n_classes = n_classes
 

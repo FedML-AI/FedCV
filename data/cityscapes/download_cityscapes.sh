@@ -3,8 +3,12 @@
 USERNAME=$1
 PASSWORD=$2
 
+POST_DATA="username=$USERNAME&password=$PASSWORD&submit=Login"
+
+echo $POST_DATA
+
 echo "Logging in using the credentials..."
-wget --keep-session-cookies --save-cookies=cookies.txt --post-data 'username=$USERNAME&password=$PASSWORD&submit=Login' https://www.cityscapes-dataset.com/login/
+wget --keep-session-cookies --save-cookies=cookies.txt --post-data $POST_DATA https://www.cityscapes-dataset.com/login/
 rm index.html
 
 echo "Downloading gtCoarse.zip..."

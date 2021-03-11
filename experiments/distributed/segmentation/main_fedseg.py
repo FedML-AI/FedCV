@@ -92,6 +92,15 @@ def add_args(parser):
     parser.add_argument('--save_client_model', type=str2bool, nargs='?', const=True, default=False,
                         help='whether to save locally trained model by clients (default: False')
 
+    parser.add_argument('--save_model', type=str2bool, nargs='?', const=True, default=False,
+                        help='whether to save best averaged model (default: False')
+
+    parser.add_argument('--load_model', type=str2bool, nargs='?', const=True, default=False,
+                        help='whether to load pre-trained model weights (default: False')
+
+    parser.add_argument('--model_path', type=str, default=None,
+                        help='Pre-trained saved model path  NOTE: --load has to be True for this argument to be considered')
+
     parser.add_argument('--batch_size', type=int, default=10, metavar='N',
                         help='input batch size for training (default: 32)')
 
@@ -204,7 +213,8 @@ def create_model(args, model_name, output_dim, img_size):
         model = UNet(backbone=args.backbone,
                      output_stride=args.outstride,
                      n_classes=output_dim,
-                     pretrained=args.backbone_pretrained)
+                     pretrained=args.backbone_pretrained,
+                     sync_bn=args.sync_bn)
 
         num_params = count_parameters(model)
         logging.info("Unet Model Size : {}".format(num_params))
@@ -302,6 +312,14 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=class_num, img_size=torch.Size([args.image_size, args.image_size]))
 
+    if args.load_model:
+        
+        try:
+            checkpoint = torch.load(args.model_path)
+            model.load_state_dict(checkpoint['state_dict'])
+        except:
+            raise("Failed to load pre-trained model")
+        
     # define my own trainer
     model_trainer = SegmentationTrainer(model, args)
 

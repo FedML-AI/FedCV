@@ -12,8 +12,9 @@ from pathlib import Path
 class CityscapesSegmentation(Dataset):
 
     def __init__(self,
-                 root_dir='../../../data/cityscapes',
+                 root_dir='../../data/cityscapes',
                  split='train_extra',
+                 annotation_type='gtCoarse',
                  transform=None,
                  data_idxs=None):
         """
@@ -25,10 +26,13 @@ class CityscapesSegmentation(Dataset):
                 transform: The custom transformations to be applied to the dataset.
                 data_idxs: The list of indexes used to partition the dataset.
             """
+        if annotation_type == 'gtFine' and split == 'train_extra':
+            raise RuntimeError("Cannot have annotation type as gtFine for train_extra as the split")
         self.root_dir = root_dir
+        self.annotation_type = annotation_type
         self.train_images = Path('{}/leftImg8bit/{}'.format(root_dir, split))
-        self.masks_dir = Path('{}/gtCoarse/{}'.format(root_dir, split))
-        self.targets_path = Path('{}/targets_{}.pickle'.format(root_dir, split))
+        self.masks_dir = Path('{}/{}/{}'.format(root_dir, annotation_type, split))
+        self.targets_path = Path('{}/targets_{}_{}.pickle'.format(root_dir, split, annotation_type))
         self.id_to_train_id = {-1: 255, 0: 255, 1: 255, 2: 255, 3: 255, 4: 255, 5: 255, 6: 255,
             7: 0, 8: 1, 9: 255, 10: 255, 11: 2, 12: 3, 13: 4,
             14: 255, 15: 255, 16: 255, 17: 5,
@@ -50,7 +54,7 @@ class CityscapesSegmentation(Dataset):
     def __preprocess(self):
         for city in os.listdir(self.train_images):
             self.images.extend(sorted(glob.glob('{}/{}/*.png'.format(self.train_images, city))))
-            self.masks.extend(sorted(glob.glob('{}/{}/*_gtCoarse_labelIds.png'.format(self.masks_dir, city))))
+            self.masks.extend(sorted(glob.glob('{}/{}/*_{}_labelIds.png'.format(self.masks_dir, city, self.annotation_type))))
         assert len(self.images) == len(self.masks)
 
     def __generate_targets(self):
@@ -77,3 +81,25 @@ class CityscapesSegmentation(Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+if __name__ == '__main__':
+    dataset = CityscapesSegmentation()
+    print('Train Extra/Coarse: {}'.format(len(dataset)))
+    assert len(dataset) == 19998
+
+    dataset = CityscapesSegmentation(split='train')
+    print('Train/Coarse: {}'.format(len(dataset)))
+    assert len(dataset) == 2975
+
+    dataset = CityscapesSegmentation(split='val')
+    print('Val/Coarse: {}'.format(len(dataset)))
+    assert len(dataset) == 500
+
+    dataset = CityscapesSegmentation(split='train', annotation_type='gtFine')
+    print('Train/Fine: {}'.format(len(dataset)))
+    assert len(dataset) == 2975
+
+    dataset = CityscapesSegmentation(split='val', annotation_type='gtFine')
+    print('Val/Fine: {}'.format(len(dataset)))
+    assert len(dataset) == 500
