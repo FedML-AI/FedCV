@@ -61,6 +61,8 @@ class ClassificationTrainer(ModelTrainer):
         elif args.sched == 'StepLR':
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 
                                                 args.decay_epochs, args.decay_rate)
+        elif args.sched is None:
+            pass
         else:
             raise NotImplementedError
 
@@ -68,9 +70,10 @@ class ClassificationTrainer(ModelTrainer):
 
         # This aims to make scheduler of torch works when scheduler is put before optimizer.
         # Please refer to pytorch document.
-        self.optimizer._step_count = 2
-        self.lr_scheduler._step_count = 2
-        self.lr_scheduler.step(epoch=args.round_idx)
+        if args.sched is not None:
+            self.optimizer._step_count = 2
+            self.lr_scheduler._step_count = 2
+            self.lr_scheduler.step(epoch=args.round_idx)
 
         epoch_loss = []
         for epoch in range(args.epochs):
