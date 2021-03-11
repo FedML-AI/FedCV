@@ -10,6 +10,71 @@ MPI_HOST_FILE=scigpu_mpi_host_file
 
 ## SGD
 ### 10 clients
+
+
+mpirun -np 11 -host scigpu10:11 \
+    ~/anaconda3/envs/py36/bin/python ./main.py \
+    --gpu_util_parse "scigpu10:0,4,4,3" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/comp/20481896/datasets/landmarks \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --comm_round 4000  --epochs 1 \
+    --model efficientnet \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt sgd --lr 0.01 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
+
+cd ~/zhtang/FedCV/experiments/distributed/classification
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu14:5,gpu15:4,gpu13:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu14:2,1,1,1;gpu15:1,1,1,1;gpu13:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 2000  --epochs 1 \
+    --model efficientnet --pretrained \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.3 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
+
+cd ~/zhtang/FedCV/experiments/distributed/classification
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu1:5,gpu2:4,gpu3:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu1:2,1,1,1;gpu2:1,1,1,1;gpu3:1,1,0,0" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 2000  --epochs 1 \
+    --model efficientnet --pretrained \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.1 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+    
+
 cd ~/zhtang/FedCV/experiments/distributed/classification
 mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
     -mca pml ob1 -mca btl ^openib \
@@ -56,6 +121,120 @@ mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
     --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
     --opt momentum --lr 0.01 --warmup-lr 1e-6 --weight-decay 1e-5 \
     --sched StepLR --decay-rounds 1 --decay-rate .999
+
+
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu14:5,gpu15:4,gpu13:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu14:2,1,1,1;gpu15:1,1,1,1;gpu13:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model efficientnet --pretrained \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.03 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
+
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu14:5,gpu15:4,gpu13:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu14:2,1,1,1;gpu15:1,1,1,1;gpu13:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model efficientnet \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.3 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu14:5,gpu15:4,gpu13:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu14:2,1,1,1;gpu15:1,1,1,1;gpu13:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model efficientnet \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.01 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu14:5,gpu15:4,gpu13:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu14:2,1,1,1;gpu15:1,1,1,1;gpu13:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model efficientnet \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.3 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
+
+mpirun  --prefix /home/esetstore/.local/openmpi-4.0.1 \
+    -mca pml ob1 -mca btl ^openib \
+    -mca btl_tcp_if_include 192.168.0.1/24 \
+    -x NCCL_DEBUG=INFO  \
+    -x NCCL_SOCKET_IFNAME=enp136s0f0,enp137s0f0 \
+    -x NCCL_IB_DISABLE=1 \
+    -bind-to none -map-by slot \
+    -np 11 -host  gpu4:5,gpu5:4,gpu3:2 \
+    /home/esetstore/pytorch1.4/bin/python ./main.py \
+    --gpu_util_parse "gpu4:2,1,1,1;gpu5:1,1,1,1;gpu3:0,0,1,1" \
+    --client_num_per_round 10 --client_num_in_total 233 \
+    --gpu_server_num 1 --gpu_num_per_server 1 --ci 0 \
+    --frequency_of_the_test 100 \
+    --dataset gld23k --data_dir /home/esetstore/dataset/gld --partition_method hetero \
+    --if-timm-dataset -b 32  --data_transform FLTransform \
+    --data_load_num_workers 4 \
+    --comm_round 4000  --epochs 1 \
+    --model efficientnet --pretrained \
+    --drop 0.2 --drop-connect 0.2 --remode pixel --reprob 0.2 \
+    --opt momentum --lr 0.3 --warmup-lr 1e-6 --weight-decay 1e-5 \
+    --sched StepLR --decay-rounds 1 --decay-rate .999
+
 
 
 
