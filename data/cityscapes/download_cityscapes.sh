@@ -11,6 +11,14 @@ echo "Logging in using the credentials..."
 wget --keep-session-cookies --save-cookies=cookies.txt --post-data $POST_DATA https://www.cityscapes-dataset.com/login/
 rm index.html
 
+echo "Downloading gtFine_trainvaltest.zip..."
+wget --load-cookies cookies.txt --content-disposition https://www.cityscapes-dataset.com/file-handling/?packageID=1
+echo "Extracting gtFine_trainvaltest.zip..."
+unzip gtFine_trainvaltest.zip
+rm gtFine_trainvaltest.zip
+rm README*
+rm license.txt
+
 echo "Downloading gtCoarse.zip..."
 wget --load-cookies cookies.txt --content-disposition https://www.cityscapes-dataset.com/file-handling/?packageID=2
 echo "Extracting gtCoarse.zip..."
