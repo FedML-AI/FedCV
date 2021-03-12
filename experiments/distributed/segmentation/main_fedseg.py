@@ -40,17 +40,16 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def set_process_name(args, id):
+def set_process_name(args):
     
     name = args.process_name.lower().strip()
 
     if not name or name == 'none':
         input_params = [args.model, args.backbone, args.dataset]
         name = '_'.join(input_params)
-    else:
-        name = args.process_name
+        return name
     
-    return name + ':' + id
+    return args.process_name
 
 
 def add_args(parser):
@@ -276,7 +275,8 @@ if __name__ == "__main__":
     logging.info('Given arguments {0}'.format(args))
 
     # customize the process name
-    str_process_name = set_process_name(args, str(process_id))
+    process_name = set_process_name(args)
+    str_process_name = process_name + ':' + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
     hostname = socket.gethostname()
@@ -288,7 +288,7 @@ if __name__ == "__main__":
         
         wandb.init(
             project = "fedcv-segmentation",
-            name = str_process_name + str(args.partition_method) + "-a" + str(
+            name = process_name + "_" + str(args.partition_method) + "-a" + str(
                 args.partition_alpha) + "-c" + str(args.client_num_in_total) + "-b" + str(
                 args.batch_size) + "-lr" + str(args.lr),
             config = args
