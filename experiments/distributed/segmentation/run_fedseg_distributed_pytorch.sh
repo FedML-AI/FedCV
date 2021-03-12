@@ -2,26 +2,24 @@
 
 CLIENT_NUM=$1
 WORKER_NUM=$2
-SERVER_NUM=$3
-GPU_NUM_PER_SERVER=$4
-MODEL=$5
-BACKBONE=$6
-BACKBONE_PRETRAINED=$7
-BACKBONE_FREEZED=$8
-OUTPUT_STRIDE=$9
-IMAGE_SIZE=${10}
-DISTRIBUTION=${11}
-ROUND=${12}
-EPOCH=${13}
-BATCH_SIZE=${14}
-CLIENT_OPTIMIZER=${15}
-LR=${16}
-DATASET=${17}
-DATA_DIR=${18}
-EVALUATION_FREQUENCY=${19}
-GPU_MAPPING_KEY=${20}
-CHECKPOINT_NAME=${21}
-CI=${22}
+MODEL=$3
+BACKBONE=$4
+BACKBONE_PRETRAINED=$5
+OUTPUT_STRIDE=$6
+IMAGE_SIZE=$7
+DISTRIBUTION=$8
+ROUND=$9
+EPOCH=${10}
+BATCH_SIZE=${11}
+CLIENT_OPTIMIZER=${12}
+LR=${13}
+DATASET=${14}
+DATA_DIR=${15}
+EVALUATION_FREQUENCY=${16}
+GPU_MAPPING_KEY=${17}
+CHECKPOINT_NAME=${18}
+PROCESS_NAME=${19}
+CI=${20}
 
 echo $MODEL
 echo $BACKBONE
@@ -36,7 +34,6 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --model $MODEL \
   --backbone $BACKBONE \
   --backbone_pretrained $BACKBONE_PRETRAINED \
-  --backbone_freezed $BACKBONE_FREEZED \
   --outstride $OUTPUT_STRIDE \
   --dataset $DATASET \
   --data_dir $DATA_DIR \
@@ -51,7 +48,6 @@ mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python3 ./main_fedseg.py \
   --epochs $EPOCH \
   --comm_round $ROUND \
   --evaluation_frequency $EVALUATION_FREQUENCY \
-  --gpu_server_num $SERVER_NUM \
-  --gpu_num_per_server $GPU_NUM_PER_SERVER \
   --gpu_mapping_key $GPU_MAPPING_KEY \
+  --process_name $PROCESS_NAME \
   --ci $CI

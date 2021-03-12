@@ -37,7 +37,7 @@ class SegmentationTrainer(ModelTrainer):
         model.to(device)
         model.train()
         criterion =  SegmentationLosses().build_loss(mode=args.loss_type)
-        scheduler = LR_Scheduler(args.lr_scheduler, args.lr, args.epochs, len(train_data))         
+        # scheduler = LR_Scheduler(args.lr_scheduler, args.lr, args.epochs, len(train_data))         
 
         if args.client_optimizer == "sgd":
 
@@ -63,7 +63,7 @@ class SegmentationTrainer(ModelTrainer):
             for (batch_idx, batch) in enumerate(train_data):
                 x, labels = batch['image'], batch['label']
                 x, labels = x.to(device), labels.to(device)
-                scheduler(optimizer, batch_idx, epoch)
+                # scheduler(optimizer, batch_idx, epoch)
                 optimizer.zero_grad()
                 log_probs = model(x)
                 loss = criterion(log_probs, labels).to(device)

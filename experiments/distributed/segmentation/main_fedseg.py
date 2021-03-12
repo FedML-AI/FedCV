@@ -4,7 +4,7 @@ import os
 import random
 import socket
 import sys
-import datetime
+import time, datetime
 
 import numpy as np
 import psutil
@@ -13,7 +13,7 @@ import torch
 import wandb
 
 # add the FedML root directory to the python path
-
+sys.path.insert(1, os.path.abspath(os.path.join(os.getcwd(), "../../../FedML")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
 
 from FedML.fedml_api.distributed.utils.gpu_mapping import mapping_processes_to_gpu_device_from_yaml_file
@@ -39,6 +39,18 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+def set_process_name(args, id):
+    
+    name = args.process_name.lower().strip()
+
+    if not name or name == 'none':
+        input_params = [args.model, args.backbone, args.dataset]
+        name = '_'.join(input_params)
+    else:
+        name = args.process_name
+    
+    return name + ':' + id
 
 
 def add_args(parser):
@@ -264,7 +276,7 @@ if __name__ == "__main__":
     logging.info('Given arguments {0}'.format(args))
 
     # customize the process name
-    str_process_name = args.process_name + str(process_id)
+    str_process_name = set_process_name(args, str(process_id))
     setproctitle.setproctitle(str_process_name)
 
     hostname = socket.gethostname()
@@ -273,13 +285,16 @@ if __name__ == "__main__":
 
     # initialize the wandb machine learning experimental tracking platform (https://www.wandb.com/).
     if process_id == 0:
+        
         wandb.init(
             project = "fedcv-segmentation",
-            name = args.process_name + str(args.partition_method) + "r" + str(args.comm_round) + "-e" + str(
-                args.epochs) + "-lr" + str(
-                args.lr),
+            name = str_process_name + str(args.partition_method) + "-a" + str(
+                args.partition_alpha) + "-c" + str(args.client_num_in_total) + "-b" + str(
+                args.batch_size) + "-lr" + str(args.lr),
             config = args
         )
+
+        wandb.run.summary["start_timer"] = time.time()
 
     # Set the random seed. The np.random seed determines the dataset partition.
     # The torch_manual_seed determines the initial weight.
