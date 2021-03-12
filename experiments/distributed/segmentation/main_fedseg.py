@@ -294,7 +294,7 @@ if __name__ == "__main__":
             config = args
         )
 
-        wandb.run.summary["start_timer"] = time.time()
+        wandb.run.summary["start_timestamp"] = time.time()
 
     # Set the random seed. The np.random seed determines the dataset partition.
     # The torch_manual_seed determines the initial weight.
