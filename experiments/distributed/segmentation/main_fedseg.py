@@ -127,9 +127,9 @@ def add_args(parser):
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
 
-    parser.add_argument('--lr_scheduler', type=str, default='poly',
+    parser.add_argument('--lr_scheduler', type=str, default=None,
                         choices=['poly', 'step', 'cos'],
-                        help='lr scheduler mode: (default: poly)')
+                        help='lr scheduler mode: (default: None)')
 
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
