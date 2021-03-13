@@ -1,7 +1,6 @@
 """
 Refer https://github.com/qubvel/segmentation_models.pytorch
 """
-import os, sys
 import logging
 
 import torch
@@ -9,11 +8,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from model.segmentation.mobilenet_v2 import MobileNetV2Encoder, IntermediateLayerGetter
 from model.segmentation.unet_utils import Conv2dReLU, Activation, Attention
 from model.segmentation.resnet import ResNet101
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../FedML")))
-from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
 
 class SegmentationHead(nn.Sequential):
 
@@ -163,6 +161,14 @@ class FeatureExtractor(nn.Module):
  
         if backbone == 'resnet':
             return ResNet101(output_stride, BatchNorm, model_name, pretrained=False)
+        elif backbone == 'mobilenet':
+            backbone_model = MobileNetV2Encoder(output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
+            backbone_model.low_level_features = backbone_model.features[0:4]
+            backbone_model.high_level_features = backbone_model.features[4:-1]
+            backbone_model.features = None
+            backbone_model.classifier = None
+            return_layers = {'high_level_features': 'out', 'low_level_features': 'low_level'}
+            return IntermediateLayerGetter(backbone_model, return_layers=return_layers)
         else:
             raise NotImplementedError
 
@@ -170,18 +176,18 @@ class FeatureExtractor(nn.Module):
 class UNet(nn.Module):
     def __init__(
         self,
-        backbone = "resnet",
-        encoder_depth = 5,
-        encoder_weights = "imagenet",
-        decoder_use_batchnorm = True,
-        encoder_out_channels = [3, 64, 256, 512, 1024, 2048],
-        decoder_channels = [256, 128, 64, 32, 16],
-        decoder_attention_type = None,
-        in_channels = 3,
-        n_classes = 21,
-        activation = None,
-        aux_params = None,
-        output_stride = 16,
+        backbone="resnet",
+        encoder_depth=5,
+        encoder_weights="imagenet",
+        decoder_use_batchnorm=True,
+        encoder_out_channels=[3, 64, 256, 512, 1024, 2048],
+        decoder_channels=[256, 128, 64, 32, 16],
+        decoder_attention_type=None,
+        in_channels=3,
+        n_classes=21,
+        activation=None,
+        aux_params=None,
+        output_stride=16,
         pretrained=False,
         sync_bn=False
     ):
