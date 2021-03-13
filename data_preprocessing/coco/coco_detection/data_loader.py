@@ -11,17 +11,7 @@ import torchvision.transforms as transforms
 from .datasets import create_dataloader
 from pathlib import Path
 
-# def partition_data(data_path, partition, n_nets):
-#     n_data = len(os.listdir(data_path))
-#     if partition == "homo":
-#         total_num = n_data
-#         idxs = np.random.permutation(total_num)
-#         batch_idxs = np.array_split(idxs, n_nets)
-#         net_dataidx_map = {i: batch_idxs[i] for i in range(n_nets)}
-#     elif partition == 'hetero':
-#         print("not support!")
-#         pass
-#     return net_dataidx_map
+
 def make_divisible(x, divisor):
     # Returns x evenly divisible by divisor
     return math.ceil(x / divisor) * divisor
