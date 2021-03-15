@@ -142,6 +142,65 @@ class UnetDecoder(nn.Module):
 
         return x
 
+class Decoder(nn.Module):
+    def __init__(self, encoder_channels, decoder_channels, n_blocks, n_classes, use_batchnorm, center, attention_type, activation, kernel_size=3):
+        super(Decoder, self).__init__()
+
+        self.unet_decoder = UnetDecoder(
+            encoder_channels=encoder_channels,
+            decoder_channels=decoder_channels,
+            n_blocks=n_blocks,
+            use_batchnorm=use_batchnorm,
+            center=center,
+            attention_type=attention_type,
+        )
+        self.segmentation_head = SegmentationHead(
+            in_channels=decoder_channels[-1],
+            out_channels=n_classes,
+            activation=activation,
+            kernel_size=kernel_size,
+        )
+        self.initialize()
+
+    def initialize_decoder(self, module):
+        for m in module.modules():
+
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_uniform_(m.weight, mode="fan_in", nonlinearity="relu")
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+
+
+    def initialize_head(self, module):
+        for m in module.modules():
+            if isinstance(m, (nn.Linear, nn.Conv2d)):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+
+
+    def initialize(self):
+        self.initialize_decoder(self.unet_decoder)
+        self.initialize_head(self.segmentation_head)
+
+    def forward(self, extracted_features):
+        decoder_output = self.unet_decoder(*extracted_features)
+        # logging.info("After executing decoder : {}".format(decoder_output.shape))
+        masks = self.segmentation_head(decoder_output)
+        # print("Final segmentation masks : {}".format(masks.shape))
+        return masks
+
+
+
 
 class FeatureExtractor(nn.Module):
     def __init__(self, backbone, output_stride, BatchNorm, pretrained):
@@ -209,61 +268,73 @@ class UNet(nn.Module):
             pretrained=pretrained
         )
 
- 
-        self.decoder = UnetDecoder(
+        self.decoder = Decoder(
             encoder_channels=encoder_out_channels[: encoder_depth+1],
             decoder_channels=decoder_channels,
             n_blocks=encoder_depth,
+            n_classes=n_classes,
             use_batchnorm=decoder_use_batchnorm,
             center=True if backbone.startswith("vgg") else False,
             attention_type=decoder_attention_type,
+            activation=activation,
+            kernel_size=3
         )
 
-        self.segmentation_head = SegmentationHead(
-            in_channels=decoder_channels[-1],
-            out_channels=n_classes,
-            activation=activation,
-            kernel_size=3,
-        )
+ 
+    #     self.decoder = UnetDecoder(
+    #         encoder_channels=encoder_out_channels[: encoder_depth+1],
+    #         decoder_channels=decoder_channels,
+    #         n_blocks=encoder_depth,
+    #         use_batchnorm=decoder_use_batchnorm,
+    #         center=True if backbone.startswith("vgg") else False,
+    #         attention_type=decoder_attention_type,
+    #     )
+
+    #     self.segmentation_head = SegmentationHead(
+    #         in_channels=decoder_channels[-1],
+    #         out_channels=n_classes,
+    #         activation=activation,
+    #         kernel_size=3,
+    #     )
 
         
-    def initialize_decoder(self, module):
-        for m in module.modules():
+    # def initialize_decoder(self, module):
+    #     for m in module.modules():
 
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_uniform_(m.weight, mode="fan_in", nonlinearity="relu")
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+    #         if isinstance(m, nn.Conv2d):
+    #             nn.init.kaiming_uniform_(m.weight, mode="fan_in", nonlinearity="relu")
+    #             if m.bias is not None:
+    #                 nn.init.constant_(m.bias, 0)
 
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+    #         elif isinstance(m, nn.BatchNorm2d):
+    #             nn.init.constant_(m.weight, 1)
+    #             nn.init.constant_(m.bias, 0)
 
-            elif isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-
-
-    def initialize_head(self, module):
-        for m in module.modules():
-            if isinstance(m, (nn.Linear, nn.Conv2d)):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+    #         elif isinstance(m, nn.Linear):
+    #             nn.init.xavier_uniform_(m.weight)
+    #             if m.bias is not None:
+    #                 nn.init.constant_(m.bias, 0)
 
 
-    def initialize(self):
-        self.initialize_decoder(self.decoder)
-        self.initialize_head(self.segmentation_head)
+    # def initialize_head(self, module):
+    #     for m in module.modules():
+    #         if isinstance(m, (nn.Linear, nn.Conv2d)):
+    #             nn.init.xavier_uniform_(m.weight)
+    #             if m.bias is not None:
+    #                 nn.init.constant_(m.bias, 0)
+
+
+    # def initialize(self):
+    #     self.initialize_decoder(self.decoder)
+    #     self.initialize_head(self.segmentation_head)
 
 
     def forward(self, x):
         features = self.encoder(x)
         # logging.info("After obtaining features from backbone : {}".format(features.shape))
-        decoder_output = self.decoder(*features)
+        # decoder_output = self.decoder(*features)
         # logging.info("After executing decoder : {}".format(decoder_output.shape))
-        masks = self.segmentation_head(decoder_output)
+        masks = self.decoder(features)
         # print("Final segmentation masks : {}".format(masks.shape))
         return masks
 
@@ -283,7 +354,7 @@ class UNet(nn.Module):
                                     yield p
 
     def get_10x_lr_params(self):
-        modules = [self.decoder, self.segmentation_head]
+        modules = [self.decoder.unet_decoder, self.decoder.segmentation_head]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
                 if isinstance(m[1], nn.Conv2d):

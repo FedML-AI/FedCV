@@ -18,6 +18,8 @@ class SegmentationTrainer(ModelTrainer):
     def get_model_params(self):
         if self.args.backbone_freezed:
             logging.info('Initializing model; Backbone Freezed')
+            if self.args.model_name == 'unet':
+                return self.model.decoder.cpu().state_dict()
             return self.model.encoder_decoder.cpu().state_dict()
         else:
             logging.info('Initializing end-to-end model')
@@ -41,7 +43,7 @@ class SegmentationTrainer(ModelTrainer):
 
         if args.client_optimizer == "sgd":
 
-            if args.backbone_freezed:
+            if args.backbone_freezed or not args.backbone_pretrained:
                 optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=args.lr * 10,
                                                  momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
             else:

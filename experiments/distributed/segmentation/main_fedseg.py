@@ -213,8 +213,11 @@ def create_model(args, model_name, output_dim, img_size):
             logging.info('Freezing Backbone')
             for param in model.feature_extractor.parameters():
                 param.requires_grad = False
-        else:
+        elif args.backbone_pretrained:
             logging.info('Finetuning Backbone')
+        else:
+            logging.info('Training from Scratch')
+
 
         num_params = count_parameters(model)
         logging.info("DeepLabV3_plus Model Size : {}".format(num_params))
@@ -227,9 +230,18 @@ def create_model(args, model_name, output_dim, img_size):
                      pretrained=args.backbone_pretrained,
                      sync_bn=args.sync_bn)
 
+        if args.backbone_freezed:
+            logging.info('Freezing Backbone')
+            for param in model.encoder.parameters():
+                param.requires_grad = False
+        elif args.backbone_pretrained:
+            logging.info('Finetuning Backbone')
+        else:
+            logging.info('Training from Scratch')
+                            
+
         num_params = count_parameters(model)
-        logging.info("Unet Model Size : {}".format(num_params))
-        
+        logging.info("Unet Model Size : {}".format(num_params))        
 
     else:
         raise ('Not Implemented Error')
