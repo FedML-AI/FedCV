@@ -50,11 +50,9 @@ class DecoderBlock(nn.Module):
         self.attention2 = Attention(attention_type, in_channels=out_channels)
 
     def forward(self, x, skip=None):
-        # print(x.shape)
+
         x = F.interpolate(x, scale_factor=2, mode="nearest")
-        # print(x.shape)
         if skip is not None:
-            # print(skip.shape)
             x = torch.cat([x, skip], dim=1)
             x = self.attention1(x)
         x = self.conv1(x)
@@ -161,14 +159,16 @@ class FeatureExtractor(nn.Module):
  
         if backbone == 'resnet':
             return ResNet101(output_stride, BatchNorm, model_name, pretrained=False)
+
         elif backbone == 'mobilenet':
-            backbone_model = MobileNetV2Encoder(output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
-            backbone_model.low_level_features = backbone_model.features[0:4]
-            backbone_model.high_level_features = backbone_model.features[4:-1]
-            backbone_model.features = None
-            backbone_model.classifier = None
-            return_layers = {'high_level_features': 'out', 'low_level_features': 'low_level'}
-            return IntermediateLayerGetter(backbone_model, return_layers=return_layers)
+            backbone_model = MobileNetV2Encoder(model_name=model_name, output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
+            return backbone_model
+            # backbone_model.low_level_features = backbone_model.features[0:4]
+            # backbone_model.high_level_features = backbone_model.features[4:-1]
+            # backbone_model.features = None
+            # backbone_model.classifier = None
+            # return_layers = {'high_level_features': 'out', 'low_level_features': 'low_level'}
+            # return IntermediateLayerGetter(backbone_model, return_layers=return_layers)
         else:
             raise NotImplementedError
 
@@ -180,7 +180,6 @@ class UNet(nn.Module):
         encoder_depth=5,
         encoder_weights="imagenet",
         decoder_use_batchnorm=True,
-        encoder_out_channels=[3, 64, 256, 512, 1024, 2048],
         decoder_channels=[256, 128, 64, 32, 16],
         decoder_attention_type=None,
         in_channels=3,
@@ -200,6 +199,15 @@ class UNet(nn.Module):
         
         self.n_classes = n_classes
 
+        self.backbone_params = {
+            "resnet":{
+                "encoder_out_channels":[3, 64, 256, 512, 1024, 2048],
+                },
+            "mobilenet":{
+                "encoder_out_channels":[3, 16, 24, 32, 96, 1280],
+                }
+        }
+
         logging.info("Constructing UNet model with Backbone {0}, number of classes {1}, output stride {2}".format(backbone,n_classes,output_stride))
 
         self.encoder = FeatureExtractor(
@@ -211,7 +219,7 @@ class UNet(nn.Module):
 
  
         self.decoder = UnetDecoder(
-            encoder_channels=encoder_out_channels[: encoder_depth+1],
+            encoder_channels=self.backbone_params[backbone]["encoder_out_channels"][: encoder_depth+1],
             decoder_channels=decoder_channels,
             n_blocks=encoder_depth,
             use_batchnorm=decoder_use_batchnorm,
@@ -260,13 +268,10 @@ class UNet(nn.Module):
 
     def forward(self, x):
         features = self.encoder(x)
-        # logging.info("After obtaining features from backbone : {}".format(features.shape))
         decoder_output = self.decoder(*features)
-        # logging.info("After executing decoder : {}".format(decoder_output.shape))
         masks = self.segmentation_head(decoder_output)
-        # print("Final segmentation masks : {}".format(masks.shape))
         return masks
-
+ 
     def get_1x_lr_params(self):
             modules = [self.encoder.backbone]
             for i in range(len(modules)):
@@ -300,7 +305,7 @@ class UNet(nn.Module):
 
 if __name__ == "__main__":
     image = torch.randn(16, 3, 512, 512)
-    model = UNet(backbone="resnet", output_stride=16, n_classes=1, pretrained=False)
+    model = UNet(backbone="mobilenet", output_stride=16, n_classes=1, pretrained=False)
     with torch.no_grad():
         output = model.forward(image)
     # print(output.size())

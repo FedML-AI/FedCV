@@ -40,20 +40,55 @@ def fixed_padding(kernel_size, dilation):
     return pad_beg, pad_end, pad_beg, pad_end
 
 
-class ConvBNReLU(nn.Sequential):
-    def __init__(self, in_planes, out_planes, batch_norm, kernel_size=3, stride=1, dilation=1, groups=1):
-        #padding = (kernel_size - 1) // 2
-        super(ConvBNReLU, self).__init__(
-            nn.Conv2d(in_planes, out_planes, kernel_size, stride, 0, dilation=dilation, groups=groups, bias=False),
-            batch_norm(out_planes),
-            nn.ReLU6(inplace=True)
-        )
+# class ConvBNReLU(nn.Sequential):
+#     def __init__(self, in_planes, out_planes, batch_norm, kernel_size=3, stride=1, dilation=1, groups=1):
+#         # padding = (kernel_size - 1) // 2
+#         super(ConvBNReLU, self).__init__(
+#             nn.Conv2d(in_planes, out_planes, kernel_size, stride, 0, dilation=dilation, groups=groups, bias=False),
+#             batch_norm(out_planes),
+#             nn.ReLU6(inplace=True)
+#         )
 
+class ConvBNActivation(nn.Sequential):
+    def __init__(
+        self,
+        model_name,
+        in_planes: int,
+        out_planes: int,
+        kernel_size: int = 3,
+        stride: int = 1,
+        groups: int = 1,
+        batch_norm = None,
+        activation_layer = None,
+        dilation: int = 1,
+    ) -> None:
+
+        if model_name == "deeplabV3_plus":
+            padding = 0
+        elif model_name == "unet":
+            padding = (kernel_size - 1) // 2 * dilation
+        if batch_norm is None:
+            batch_norm = nn.BatchNorm2d
+        if activation_layer is None:
+            activation_layer = nn.ReLU6
+        super(ConvBNReLU, self).__init__(
+            nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, dilation=dilation, groups=groups,
+                      bias=False),
+            batch_norm(out_planes),
+            activation_layer(inplace=True)
+        )
+        self.out_channels = out_planes
+
+
+ConvBNReLU = ConvBNActivation
 
 class InvertedResidual(nn.Module):
-    def __init__(self, inp, oup, stride, dilation, expand_ratio, batch_norm):
+    def __init__(self, inp, oup, stride, dilation, expand_ratio, batch_norm, model_name):
         super(InvertedResidual, self).__init__()
         self.stride = stride
+        self.model_name = model_name
+        
+        
         assert stride in [1, 2]
 
         hidden_dim = int(round(inp * expand_ratio))
@@ -62,11 +97,11 @@ class InvertedResidual(nn.Module):
         layers = []
         if expand_ratio != 1:
             # pw
-            layers.append(ConvBNReLU(inp, hidden_dim, kernel_size=1, batch_norm=batch_norm))
+            layers.append(ConvBNReLU(self.model_name, inp, hidden_dim, kernel_size=1, batch_norm=batch_norm))
 
         layers.extend([
             # dw
-            ConvBNReLU(hidden_dim, hidden_dim, stride=stride, dilation=dilation, groups=hidden_dim, batch_norm=batch_norm),
+            ConvBNReLU(self.model_name, hidden_dim, hidden_dim, stride=stride, dilation=dilation, groups=hidden_dim, batch_norm=batch_norm),
             # pw-linear
             nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
             batch_norm(oup),
@@ -76,7 +111,12 @@ class InvertedResidual(nn.Module):
         self.input_padding = fixed_padding( 3, dilation )
 
     def forward(self, x):
-        x_pad = F.pad(x, self.input_padding)
+        if self.model_name == "deeplabV3_plus":
+            x_pad = F.pad(x, self.input_padding)
+        
+        elif self.model_name == "unet":
+            x_pad = x
+
         if self.use_res_connect:
             return x + self.conv(x_pad)
         else:
@@ -84,7 +124,7 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-    def __init__(self, output_stride, batch_norm, num_classes=1000, width_mult=1.0, inverted_residual_setting=None, round_nearest=8, pretrained=True):
+    def __init__(self, model_name, output_stride, batch_norm, num_classes=1000, width_mult=1.0, inverted_residual_setting=None, round_nearest=8, pretrained=True):
         """
         MobileNet V2 main class
         Args:
@@ -95,7 +135,11 @@ class MobileNetV2(nn.Module):
             Set to 1 to turn off rounding
         """
         super(MobileNetV2, self).__init__()
+
+        self.model_name = model_name
+
         block = InvertedResidual
+
         input_channel = 32
         last_channel = 1280
         self.output_stride = output_stride
@@ -120,7 +164,7 @@ class MobileNetV2(nn.Module):
         # building first layer
         input_channel = _make_divisible(input_channel * width_mult, round_nearest)
         self.last_channel = _make_divisible(last_channel * max(1.0, width_mult), round_nearest)
-        features = [ConvBNReLU(3, input_channel, batch_norm=batch_norm, stride=2)]
+        features = [ConvBNReLU(self.model_name,3, input_channel, batch_norm=batch_norm, stride=2)]
         current_stride *= 2
         dilation=1
 
@@ -136,13 +180,15 @@ class MobileNetV2(nn.Module):
             output_channel = int(c * width_mult)
 
             for i in range(n):
+                if self.model_name == "unet":
+                    stride = s if i == 0 else 1
                 if i == 0:
-                    features.append(block(input_channel, output_channel, stride, previous_dilation, expand_ratio=t, batch_norm=batch_norm))
+                    features.append(block(input_channel, output_channel, stride, previous_dilation, expand_ratio=t, batch_norm=batch_norm, model_name=self.model_name))
                 else:
-                    features.append(block(input_channel, output_channel, 1, dilation, expand_ratio=t, batch_norm=batch_norm))
+                    features.append(block(input_channel, output_channel, 1, dilation, expand_ratio=t, batch_norm=batch_norm, model_name=self.model_name))
                 input_channel = output_channel
         # building last several layers
-        features.append(ConvBNReLU(input_channel, self.last_channel, kernel_size=1, batch_norm=batch_norm))
+        features.append(ConvBNReLU(self.model_name, input_channel, self.last_channel, kernel_size=1, batch_norm=batch_norm))
         # make it nn.Sequential
         self.features = nn.Sequential(*features)
 
@@ -158,10 +204,28 @@ class MobileNetV2(nn.Module):
             self._load_pretrained_model()
 
     def forward(self, x):
-        x = self.features(x)
-        x = x.mean([2, 3])
-        x = self.classifier(x)
-        return x
+        if self.model_name == "deeplabV3_plus":
+            x = self.features(x)
+            x = x.mean([2, 3])
+            x = self.classifier(x)
+            return x
+        elif self.model_name =="unet":
+            stages = [
+                nn.Identity(),
+                self.features[:2],
+                self.features[2:4],
+                self.features[4:7],
+                self.features[7:14],
+                self.features[14:],                
+            ]
+
+            feat = []
+            for i in range(len(stages)):
+                x = stages[i](x)
+                # print("In MobilenetV2 Unet ", x.shape)
+                feat.append(x)
+
+            return feat       
 
     def _init_weights(self):
         for m in self.modules():

@@ -163,7 +163,7 @@ class FeatureExtractor(nn.Module):
         if backbone == 'resnet':
             return ResNet101(output_stride, BatchNorm, model_name, pretrained=pretrained)
         elif backbone == 'mobilenet':
-            backbone_model = MobileNetV2Encoder(output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
+            backbone_model = MobileNetV2Encoder(model_name=model_name, output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
             backbone_model.low_level_features = backbone_model.features[0:4]
             backbone_model.high_level_features = backbone_model.features[4:-1]
             backbone_model.features = None
@@ -274,7 +274,7 @@ class DeepLabV3_plus(nn.Module):
 
 if __name__ == "__main__":
     model = DeepLabV3_plus(backbone='mobilenet', nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True)
-    image = torch.randn(1,3,512,512)
+    image = torch.randn(16,3,512,512)
     with torch.no_grad():
         output = model.forward(image)
     print(output.size())
