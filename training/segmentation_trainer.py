@@ -28,6 +28,8 @@ class SegmentationTrainer(ModelTrainer):
     def set_model_params(self, model_parameters):
         if self.args.backbone_freezed:
             logging.info('Updating Global model; Backbone Freezed')
+            if self.args.model == 'unet':
+                return self.model.decoder.cpu().state_dict()
             self.model.encoder_decoder.load_state_dict(model_parameters)
         else:
             logging.info('Updating Global model')
