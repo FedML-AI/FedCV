@@ -18,7 +18,7 @@ class SegmentationTrainer(ModelTrainer):
     def get_model_params(self):
         if self.args.backbone_freezed:
             logging.info('Initializing model; Backbone Freezed')
-            if self.args.model_name == 'unet':
+            if self.args.model == 'unet':
                 return self.model.decoder.cpu().state_dict()
             return self.model.encoder_decoder.cpu().state_dict()
         else:
