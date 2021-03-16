@@ -126,6 +126,7 @@ def get_mapping_per_user(fn):
     return data_files, data_local_num_dict, net_dataidx_map
 
 
+
 def get_dataloader(dataset_train, dataset_test, dataidxs=None, args=None):
     train_bs = args.batch_size
     test_bs = args.batch_size
@@ -299,6 +300,60 @@ def load_partition_data_landmarks(dataset, data_dir, fed_train_map_file, fed_tes
     # logging("data_local_num_dict: %s" % data_local_num_dict)
     return train_data_num, test_data_num, train_data_global, test_data_global, \
            data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num
+
+
+def record_net_data_stats(y_train, net_dataidx_map):
+    net_cls_counts = {}
+
+    for net_i, dataidx in net_dataidx_map.items():
+        unq, unq_cnt = np.unique(y_train[dataidx], return_counts=True)
+        tmp = {unq[i]: unq_cnt[i] for i in range(len(unq))}
+        net_cls_counts[net_i] = tmp
+    logging.debug('Data statistics: %s' % str(net_cls_counts))
+    return net_cls_counts
+
+
+def partition_data(dataset, datadir, fed_train_map_file, fed_test_map_file):
+    """
+    mapping_per_user is {'user_id': [{'user_id': xxx, 'image_id': xxx, 'class': xxx} ... {}], 
+                         'user_id': [{'user_id': xxx, 'image_id': xxx, 'class': xxx} ... {}],
+    } or               
+                        [{'user_id': xxx, 'image_id': xxx, 'class': xxx} ...  
+                         {'user_id': xxx, 'image_id': xxx, 'class': xxx} ... ]
+    }
+    """
+    mapping_table = _read_csv(fed_train_map_file)
+    expected_cols = ['user_id', 'image_id', 'class']
+    if not all(col in mapping_table[0].keys() for col in expected_cols):
+        logger.error('%s has wrong format.', fed_train_map_file)
+        raise ValueError(
+            'The mapping file must contain user_id, image_id and class columns. '
+            'The existing columns are %s' % ','.join(mapping_table[0].keys()))
+
+    mapping_per_user = collections.defaultdict(list)
+    y_train = []
+
+    for i, row in enumerate(mapping_table):
+        user_id = row['user_id']
+        mapping_per_user[user_id].append(i)
+        y_train.append(row['class'])
+
+    net_cls_counts = {}
+
+    for net_i, dataidx in mapping_per_user.items():
+        unq, unq_cnt = np.unique(y_train[dataidx], return_counts=True)
+        tmp = {unq[i]: unq_cnt[i] for i in range(len(unq))}
+        net_cls_counts[net_i] = tmp
+    logging.debug('Data statistics: %s' % str(net_cls_counts))
+
+    return mapping_per_user, net_cls_counts
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
