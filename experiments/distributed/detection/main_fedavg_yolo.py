@@ -32,6 +32,7 @@ sys.path.append('../../../')
 import test  # import test.py to get mAP after each epoch
 # from models.experimental import attempt_load
 # from models.yolo import Model
+import pdb
 
 from fedml_api.model.object_detection.yolov5.models.yolo import Model
 from models.yolo import Model
@@ -62,6 +63,31 @@ from fedml_api.data_preprocessing.coco_detection.data_loader import load_partiti
 
 logger = logging.getLogger(__name__)
 
+import sys
+import torch
+from torch.utils.data import dataloader
+from torch.multiprocessing import reductions
+from multiprocessing.reduction import ForkingPickler
+
+default_collate_func = dataloader.default_collate
+
+
+def default_collate_override(batch):
+  dataloader._use_shared_memory = False
+  return default_collate_func(batch)
+
+setattr(dataloader, 'default_collate', default_collate_override)
+
+for t in torch._storage_classes:
+  if sys.version_info[0] == 2:
+    if t in ForkingPickler.dispatch:
+        del ForkingPickler.dispatch[t]
+  else:
+    if t in ForkingPickler._extra_reducers:
+        del ForkingPickler._extra_reducers[t]
+
+
+
 try:
     import wandb
 except ImportError:
@@ -69,7 +95,24 @@ except ImportError:
     logger.info("Install Weights & Biases for experiment logging via 'pip install wandb' (recommended)")
 
 
+def init_training_device(process_ID, fl_worker_num, gpu_num_per_machine):
+    # initialize the mapping from process ID to GPU ID: <process ID, GPU ID>
+    if process_ID == 0:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        return device
+    process_gpu_dict = dict()
+    for client_index in range(fl_worker_num):
+        gpu_index = client_index % gpu_num_per_machine
+        process_gpu_dict[client_index] = gpu_index
+
+    logging.info(process_gpu_dict)
+    device = torch.device("cuda:" + str(process_gpu_dict[process_ID - 1]) if torch.cuda.is_available() else "cpu")
+    logging.info(device)
+    return device
+
 if __name__ == '__main__':
+    import tracemalloc
+    tracemalloc.start()
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='yolov5s.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
@@ -95,6 +138,7 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer', default=None, help='optimizer')
     parser.add_argument('--scheduler', default=None , help='optimizer scheduler')
     parser.add_argument('--wandb', default=None, help='wandb init')
+    parser.add_argument('--ema', default=None, help='ema init')
 
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--local_rank', type=int, default=-1, help='DDP parameter, do not modify')
@@ -103,6 +147,8 @@ if __name__ == '__main__':
     parser.add_argument('--project', default='runs/train', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
+    parser.add_argument('--linear-lr', action='store_true', help='linear LR')
+    parser.add_argument('--model_stride', default=0, type=int)
 
     # Training settings
     parser.add_argument('--model', type=str, default='mobilenet', metavar='N',
@@ -160,9 +206,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--round_idx', type=int, default=0,
                         help='round_idx')
-
     opt = parser.parse_args()
-
     opt.total_batch_size = opt.batch_size
     opt.world_size = int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
     opt.global_rank = int(os.environ['RANK']) if 'RANK' in os.environ else -1
@@ -173,17 +217,16 @@ if __name__ == '__main__':
     # fedml
     comm, process_id, worker_number = FedML_init()
     logging.info(opt)
-
     print("process_id:", process_id)
-    # if process_id == 0:
+    #if process_id == 0:
     wandb.init(
-        # project="federated_nas",
-        project="fedml distributed",
-        name="FedAVG(d)" + str(opt.partition_method) + "-c" + str(opt.comm_round) + "-e" + str(
-            opt.epochs),
-        config=opt
-    )
-
+            # project="federated_nas",
+            project="fedml distributed",
+            name="FedAVG(d)" + str(opt.partition_method) + "-c" + str(opt.comm_round) + "-e" + str(
+                opt.epochs),
+            config=opt
+        )
+    device = init_training_device(process_id, worker_number - 1, opt.gpu_num_per_server)
     str_process_name = "FedAvg (distributed):" + str(process_id)
     setproctitle.setproctitle(str_process_name)
 
@@ -215,7 +258,7 @@ if __name__ == '__main__':
         opt.save_dir = increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok | opt.evolve)  # increment run
 
     # DDP mode
-    device = select_device(opt.device, batch_size=opt.batch_size)
+    #device = select_device(opt.device, batch_size=opt.batch_size)
     if opt.local_rank != -1:
         assert torch.cuda.device_count() > opt.local_rank
         torch.cuda.set_device(opt.local_rank)
@@ -231,7 +274,6 @@ if __name__ == '__main__':
             warn('Compatibility: %s missing "box" which was renamed from "giou" in %s' %
                  (opt.hyp, 'https://github.com/ultralytics/yolov5/pull/1120'))
             hyp['box'] = hyp.pop('giou')
-
     # # Train
     # logger.info(opt)
     # if not opt.evolve:
@@ -299,11 +341,21 @@ if __name__ == '__main__':
             print('freezing %s' % k)
             v.requires_grad = False
 
+    # fedml
 
+    dataset = load_partition_data_coco(opt, hyp, model)
+    [train_data_num, test_data_num, train_data_global, test_data_global,
+     train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num] = dataset
 
+    opt.model_stride = model.stride
+    gs = int(max(model.stride))  # grid size (max stride)
+    imgsz, imgsz_test = [check_img_size(x, gs) for x in opt.img_size]  # verify imgsz are gs-multiples
     # DP mode
-    if cuda and rank == -1 and torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model)
+    #if cuda and rank == -1 and torch.cuda.device_count() > 1:
+    #    device = init_training_device(process_id, worker_number - 1, opt.gpu_num_per_server)
+    #    print('now is using dataparallel, devices are ', device)
+        #model = torch.nn.DataParallel(model, device_ids=[device])
+    #    model = model.to(device)
 
     # SyncBatchNorm
     if opt.sync_bn and cuda and rank != -1:
@@ -313,19 +365,9 @@ if __name__ == '__main__':
     # EMA
     ema = ModelEMA(model) if rank in [-1, 0] else None
 
-
-    dataset = load_partition_data_coco(opt, hyp, model)
-
     # DDP mode
     if cuda and rank != -1:
         model = DDP(model, device_ids=[opt.local_rank], output_device=opt.local_rank)
-
-
-    # fedml
-
-    #dataset = load_partition_data_coco(opt, hyp, model)
-    [train_data_num, test_data_num, train_data_global, test_data_global,
-     train_data_local_num_dict, train_data_local_dict, test_data_local_dict, class_num] = dataset
 
     hyp['cls'] *= nc / 80.
     model.nc = nc  # attach number of classes to model
@@ -333,7 +375,12 @@ if __name__ == '__main__':
     model.gr = 1.0  # iou loss ratio (obj_loss = 1.0 or iou)
     model.class_weights = labels_to_class_weights(train_data_global.dataset.labels, nc).to(device)  # attach class weights
     model.names = names
-    # args = (opt, hyp)
+    args = (opt, hyp)
+    # Optimizer
+    nbs = 64  # nominal batch size
+    accumulate = max(round(nbs / total_batch_size), 1)  # accumulate loss before optimizing
+    hyp['weight_decay'] *= total_batch_size * accumulate / nbs  # scale weight_decay
+    # logger.info(f"Scaled weight_decay = {hyp['weight_decay']}")
 
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
     for k, v in model.named_modules():
@@ -355,10 +402,15 @@ if __name__ == '__main__':
     del pg0, pg1, pg2
 
     total_epochs = epochs * opt.comm_round
+
     lf = lambda x: ((1 + math.cos(x * math.pi / total_epochs)) / 2) * (1 - hyp['lrf']) + hyp['lrf']  # cosine
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
+
+
+
     opt.scheduler = scheduler
     opt.optimizer = optimizer
+    opt.ema = ema
 
     opt.hyp = hyp  # add hyperparameters
     # if process_id == 0:
@@ -369,7 +421,20 @@ if __name__ == '__main__':
     #                        name=save_dir.stem,
     #                        id=str(process_id + 12000).encode('utf-8'))
     opt.wandb = wandb
+    device = init_training_device(process_id, worker_number - 1, opt.gpu_num_per_server)
+    # start "federated averaging (FedAvg)"
+    print("start distributed")
+    #snapshot1 = tracemalloc.take_snapshot() 
+    #FedML_FedAvg_distributed(process_id, worker_number, device, comm,
+    #                         model, train_data_num, train_data_global, test_data_global,
+    #                         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, opt, None, True, hyp)
+    
+    #snapshot2 = tracemalloc.take_snapshot()
+    #top_stats = snapshot2.compare_to(snapshot1, 'lineno')
 
+    #print("[ Top 10 differences ]")
+    #for stat in top_stats[:10]:
+    #    print(stat)
     try:
     # start "federated averaging (FedAvg)"
         print("start distributed")
@@ -380,4 +445,5 @@ if __name__ == '__main__':
         print(e)
         logging.info('traceback.format_exc():\n%s' % traceback.format_exc())
         MPI.COMM_WORLD.Abort()
+
 

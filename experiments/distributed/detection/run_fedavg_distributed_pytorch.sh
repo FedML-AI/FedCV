@@ -14,13 +14,18 @@ DATASET=${11}
 DATA_DIR=${12}
 WEIGHTS=${13}
 CI=${14}
+DEVICE=${15}
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
-echo $PROCESS_NUM
+#echo $PROCESS_NUM
+echo $DATA
+echo $DATASET
+echo $DATA_DIR
+export PYTHONWARNINGS='ignore:semaphore_tracker:UserWarning'
 
 hostname > mpi_host_file
 
-mpirun -np $PROCESS_NUM --allow-run-as-root -hostfile ./mpi_host_file python3 ./main_fedavg_yolo.py \
+mpirun -np $PROCESS_NUM -hostfile ./mpi_host_file python ./main_fedavg_yolo.py \
   --gpu_server_num $SERVER_NUM \
   --gpu_num_per_server $GPU_NUM_PER_SERVER \
   --data $DATA \
@@ -34,4 +39,6 @@ mpirun -np $PROCESS_NUM --allow-run-as-root -hostfile ./mpi_host_file python3 ./
   --weights $WEIGHTS \
   --batch_size $BATCH_SIZE \
   --lr $LR \
-  --ci $CI
+  --ci $CI \
+#  --notest \
+  --device $DEVICE
