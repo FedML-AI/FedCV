@@ -25,12 +25,17 @@ DEVICE=${15}6}
 PYTHON=${17}
 
 ```
-train on IID dataset
+train on IID dataset (eg:coco128,4 clients)
 ```
-sh run_fedavg_distributed_pytorch.sh 4 4 1 2 ./data/coco128.yaml homo 300 1 4 0.01 ./data/yolov5s.yaml 0 ./data/yolov5s.pt 0 0,1
+sh run_fedavg_distributed_pytorch.sh 4 4 1 2 ./data/coco128.yaml homo 300 1 4 0.01 FedCV/model/detection/models/yolov5s.yaml 0 FedCV/model/detection/models/yolov5s.pt 0 0,1
 ```
 ```
-
+```
+train on Non-IID dataset (eg:coco128,4 clients)
+```
+sh run_fedavg_distributed_pytorch.sh 4 4 1 2 ./data/coco128.yaml hetero 300 1 4 0.01 FedCV/model/detection/models/yolov5s.yaml 0 FedCV/model/detection/models/yolov5s.pt 0 0,1
+```
+```
 
 
 
