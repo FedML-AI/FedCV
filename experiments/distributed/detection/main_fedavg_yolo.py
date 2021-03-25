@@ -40,7 +40,7 @@ from FedCV.model.detection.utils.general import labels_to_class_weights, increme
     fitness, strip_optimizer, get_latest_run, check_dataset, check_file, check_git_status, check_img_size, \
     print_mutation, set_logging
 from FedCV.model.detection.utils.google_utils import attempt_download
-from FedCV.model.detection..utils.loss import compute_loss
+from FedCV.model.detection.utils.loss import compute_loss
 from FedCV.model.detection.utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from FedCV.model.detection.utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
 
