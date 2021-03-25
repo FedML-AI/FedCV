@@ -26,27 +26,27 @@ from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-sys.path.append('../../../')
+sys.path.append('../../../../')
 
 
 import test  # import test.py to get mAP after each epoch
 
 import pdb
 
-from FedCV.model.detection.models.yolo import Model
+from model.detection.models.yolo import Model
 
-from FedCV.model.detection.utils.autoanchor import check_anchors
-from FedCV.model.detection.utils.general import labels_to_class_weights, increment_path, labels_to_image_weights, init_seeds, \
+from model.detection.utils.autoanchor import check_anchors
+from model.detection.utils.general import labels_to_class_weights, increment_path, labels_to_image_weights, init_seeds, \
     fitness, strip_optimizer, get_latest_run, check_dataset, check_file, check_git_status, check_img_size, \
     print_mutation, set_logging
-from FedCV.model.detection.utils.google_utils import attempt_download
-from FedCV.model.detection.utils.loss import compute_loss
-from FedCV.model.detection.utils.plots import plot_images, plot_labels, plot_results, plot_evolution
-from FedCV.model.detection.utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
+from model.detection.utils.google_utils import attempt_download
+from model.detection.utils.loss import compute_loss
+from model.detection.utils.plots import plot_images, plot_labels, plot_results, plot_evolution
+from model.detection.utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
 
 
 from FedML.fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
-from FedCV.data_preprocessing.coco.coco_detection.data_loader import load_partition_data_coco
+from data_preprocessing.coco.coco_detection.data_loader import load_partition_data_coco
 
 logger = logging.getLogger(__name__)
 
