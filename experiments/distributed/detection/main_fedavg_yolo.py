@@ -30,14 +30,12 @@ sys.path.append('../../../')
 
 
 import test  # import test.py to get mAP after each epoch
-# from models.experimental import attempt_load
-# from models.yolo import Model
+
 import pdb
 
 from FedCV.model.detection.models.yolo import Model
-#from models.yolo import Model
+
 from FedCV.model.detection.utils.autoanchor import check_anchors
-# from utils.datasets import create_dataloader
 from FedCV.model.detection.utils.general import labels_to_class_weights, increment_path, labels_to_image_weights, init_seeds, \
     fitness, strip_optimizer, get_latest_run, check_dataset, check_file, check_git_status, check_img_size, \
     print_mutation, set_logging
@@ -46,17 +44,6 @@ from FedCV.model.detection..utils.loss import compute_loss
 from FedCV.model.detection.utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from FedCV.model.detection.utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
 
-
-# from utils.autoanchor import check_anchors
-# from utils.datasets import create_dataloader
-# from fedml_api.model.object_detection.yolov5.models.experimental import attempt_load
-# from utils.general import labels_to_class_weights, increment_path, labels_to_image_weights, init_seeds, \
-#     fitness, strip_optimizer, get_latest_run, check_dataset, check_file, check_git_status, check_img_size, \
-#     print_mutation, set_logging
-# from utils.google_utils import attempt_download
-# from utils.loss import compute_loss
-# from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
-# from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
 
 from FedML.fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 from FedCV.data_preprocessing.coco.coco_detection.data_loader import load_partition_data_coco
@@ -274,14 +261,7 @@ if __name__ == '__main__':
             warn('Compatibility: %s missing "box" which was renamed from "giou" in %s' %
                  (opt.hyp, 'https://github.com/ultralytics/yolov5/pull/1120'))
             hyp['box'] = hyp.pop('giou')
-    # # Train
-    # logger.info(opt)
-    # if not opt.evolve:
-    #     tb_writer = None  # init loggers
-    #     if opt.global_rank in [-1, 0]:
-    #         logger.info(f'Start Tensorboard with "tensorboard --logdir {opt.project}", view at http://localhost:6006/')
-    #         tb_writer = SummaryWriter(opt.save_dir)  # Tensorboard
-    #     train(hyp, opt, device, tb_writer, wandb)
+
 
     logger.info(f'Hyperparameters {hyp}')
     save_dir, epochs, batch_size, total_batch_size, weights, rank = \
@@ -350,12 +330,7 @@ if __name__ == '__main__':
     opt.model_stride = model.stride
     gs = int(max(model.stride))  # grid size (max stride)
     imgsz, imgsz_test = [check_img_size(x, gs) for x in opt.img_size]  # verify imgsz are gs-multiples
-    # DP mode
-    #if cuda and rank == -1 and torch.cuda.device_count() > 1:
-    #    device = init_training_device(process_id, worker_number - 1, opt.gpu_num_per_server)
-    #    print('now is using dataparallel, devices are ', device)
-        #model = torch.nn.DataParallel(model, device_ids=[device])
-    #    model = model.to(device)
+
 
     # SyncBatchNorm
     if opt.sync_bn and cuda and rank != -1:
@@ -413,28 +388,12 @@ if __name__ == '__main__':
     opt.ema = ema
 
     opt.hyp = hyp  # add hyperparameters
-    # if process_id == 0:
-    # wandb = opt.wandb
-    # if wandb and wandb.run is None:
-    #     wandb.init(config=opt, resume="allow",
-    #                        project='fedml_yolov5_new' if opt.project == 'runs/train' else Path(opt.project).stem,
-    #                        name=save_dir.stem,
-    #                        id=str(process_id + 12000).encode('utf-8'))
+
     opt.wandb = wandb
     device = init_training_device(process_id, worker_number - 1, opt.gpu_num_per_server)
     # start "federated averaging (FedAvg)"
     print("start distributed")
-    #snapshot1 = tracemalloc.take_snapshot() 
-    #FedML_FedAvg_distributed(process_id, worker_number, device, comm,
-    #                         model, train_data_num, train_data_global, test_data_global,
-    #                         train_data_local_num_dict, train_data_local_dict, test_data_local_dict, opt, None, True, hyp)
-    
-    #snapshot2 = tracemalloc.take_snapshot()
-    #top_stats = snapshot2.compare_to(snapshot1, 'lineno')
-
-    #print("[ Top 10 differences ]")
-    #for stat in top_stats[:10]:
-    #    print(stat)
+   
     try:
     # start "federated averaging (FedAvg)"
         print("start distributed")
