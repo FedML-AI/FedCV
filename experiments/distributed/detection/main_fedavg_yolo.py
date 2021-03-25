@@ -58,7 +58,7 @@ from FedCV.model.detection.utils.torch_utils import ModelEMA, select_device, int
 # from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 # from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
 
-from fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
+from FedML.fedml_api.distributed.fedavg.FedAvgAPI import FedML_init, FedML_FedAvg_distributed
 from FedCV.data_preprocessing.coco.coco_detection.data_loader import load_partition_data_coco
 
 logger = logging.getLogger(__name__)
