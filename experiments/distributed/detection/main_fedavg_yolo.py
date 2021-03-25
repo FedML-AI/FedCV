@@ -34,17 +34,17 @@ import test  # import test.py to get mAP after each epoch
 # from models.yolo import Model
 import pdb
 
-from fedml_api.model.object_detection.yolov5.models.yolo import Model
-from models.yolo import Model
-from fedml_api.model.object_detection.yolov5.utils.autoanchor import check_anchors
+from FedCV.model.detection.models.yolo import Model
+#from models.yolo import Model
+from FedCV.model.detection.utils.autoanchor import check_anchors
 # from utils.datasets import create_dataloader
-from fedml_api.model.object_detection.yolov5.utils.general import labels_to_class_weights, increment_path, labels_to_image_weights, init_seeds, \
+from FedCV.model.detection.utils.general import labels_to_class_weights, increment_path, labels_to_image_weights, init_seeds, \
     fitness, strip_optimizer, get_latest_run, check_dataset, check_file, check_git_status, check_img_size, \
     print_mutation, set_logging
-from fedml_api.model.object_detection.yolov5.utils.google_utils import attempt_download
-from fedml_api.model.object_detection.yolov5.utils.loss import compute_loss
-from fedml_api.model.object_detection.yolov5.utils.plots import plot_images, plot_labels, plot_results, plot_evolution
-from fedml_api.model.object_detection.yolov5.utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
+from FedCV.model.detection.utils.google_utils import attempt_download
+from FedCV.model.detection..utils.loss import compute_loss
+from FedCV.model.detection.utils.plots import plot_images, plot_labels, plot_results, plot_evolution
+from FedCV.model.detection.utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
 
 
 # from utils.autoanchor import check_anchors
