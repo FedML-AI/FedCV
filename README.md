@@ -3,7 +3,7 @@
 ## Image Classification
 Dataset: Google Landmark, COCO, ImageNet
 
-Model: Vision Transformer, EfficientNetB0, MobileNetV3
+Model: EfficientNetB0, MobileNetV3
 
 ## Object Detection
 Dataset: COCO
