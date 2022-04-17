@@ -1,18 +1,12 @@
-import os, sys
-import numpy as np
 import math
 import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.model_zoo as model_zoo
 
-
-# add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-from fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
-from fedml_api.model.cv.xception import *
-from .resnet import *
+from FedML.fedml_api.model.cv.batchnorm_utils import SynchronizedBatchNorm2d
+from model.segmentation.resnet import ResNet101
+from model.segmentation.mobilenet_v2 import MobileNetV2Encoder, IntermediateLayerGetter
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, dilation, BatchNorm):
@@ -156,20 +150,26 @@ class Decoder(nn.Module):
                 m.bias.data.zero_()
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, backbone, n_channels, output_stride, BatchNorm, pretrained):
+    def __init__(self, backbone, n_channels, output_stride, BatchNorm, pretrained, num_classes):
         super(FeatureExtractor, self).__init__()
-        self.backbone = self.build_backbone(backbone=backbone, n_channels=n_channels, output_stride=output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
+        self.backbone = self.build_backbone(backbone=backbone, n_channels=n_channels, output_stride=output_stride, BatchNorm=BatchNorm, pretrained=pretrained, num_classes=num_classes)
 
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
         return x, low_level_feat
 
     @staticmethod
-    def build_backbone(backbone='xception', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True):
-        if backbone == 'xception':
-            return AlignedXception(inplanes = n_channels, output_stride = output_stride, BatchNorm=BatchNorm, pretrained=pretrained)
-        elif backbone == 'resnet':
-            return ResNet101(output_stride, BatchNorm, pretrained=pretrained)
+    def build_backbone(backbone='resnet', n_channels=3, output_stride=16, BatchNorm=nn.BatchNorm2d, pretrained=True, num_classes=21, model_name="deeplabV3_plus"):
+        if backbone == 'resnet':
+            return ResNet101(output_stride, BatchNorm, model_name, pretrained=pretrained)
+        elif backbone == 'mobilenet':
+            backbone_model = MobileNetV2Encoder(output_stride=output_stride, batch_norm=BatchNorm, pretrained=pretrained)
+            backbone_model.low_level_features = backbone_model.features[0:4]
+            backbone_model.high_level_features = backbone_model.features[4:-1]
+            backbone_model.features = None
+            backbone_model.classifier = None
+            return_layers = {'high_level_features': 'out', 'low_level_features': 'low_level'}
+            return IntermediateLayerGetter(backbone_model, return_layers=return_layers)
         else:
             raise NotImplementedError
 
@@ -206,13 +206,13 @@ class DeepLabV3_plus(nn.Module):
             output_stride = 8        
 
         if sync_bn == True:
-            BatchNorm2d = SynchronizedBatchNorm2d
+            self.BatchNorm2d = SynchronizedBatchNorm2d
         else:
-            BatchNorm2d = nn.BatchNorm2d
+            self.BatchNorm2d = nn.BatchNorm2d
 
         self.n_classes = n_classes
-        self.feature_extractor = FeatureExtractor(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=BatchNorm2d, pretrained=pretrained)
-        self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size = torch.Size([513, 513]), output_stride=output_stride, BatchNorm=BatchNorm2d, num_classes=n_classes)
+        self.feature_extractor = FeatureExtractor(backbone=backbone, n_channels=nInputChannels, output_stride=output_stride, BatchNorm=self.BatchNorm2d, pretrained=pretrained, num_classes=n_classes)
+        self.encoder_decoder = EncoderDecoder(backbone=backbone, image_size=image_size, output_stride=output_stride, BatchNorm=self.BatchNorm2d, num_classes=n_classes)
 
         self.freeze_bn = freeze_bn
 
@@ -227,7 +227,7 @@ class DeepLabV3_plus(nn.Module):
 
     def _freeze_bn(self):
         for m in self.modules():
-            if isinstance(m, BatchNorm2d):
+            if isinstance(m, self.BatchNorm2d):
                 m.eval()
 
     def _init_weight(self):
@@ -235,7 +235,7 @@ class DeepLabV3_plus(nn.Module):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, BatchNorm2d):
+            elif isinstance(m, self.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
@@ -273,8 +273,8 @@ class DeepLabV3_plus(nn.Module):
 
 
 if __name__ == "__main__":
-    model = DeepLabV3_plus(nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True)
-    image = torch.randn(16,3,513,513)
+    model = DeepLabV3_plus(backbone='mobilenet', nInputChannels=3, n_classes=3, output_stride=16, pretrained=False, _print=True)
+    image = torch.randn(1,3,512,512)
     with torch.no_grad():
         output = model.forward(image)
     print(output.size())

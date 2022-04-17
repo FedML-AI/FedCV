@@ -1,48 +1,53 @@
-from typing import Tuple, Callable, Optional, List, Iterable, Union, Sized, Literal, Any, Dict
-
+import logging
 import numpy as np
 import torch.utils.data as data
 from torchvision import transforms
 
 from FedML.fedml_core.non_iid_partition.noniid_partition import record_data_stats, \
     non_iid_partition_with_dirichlet_distribution
+
 from .dataset import PascalVocAugmentedSegmentation
-from .transforms import RandomMirror, RandomScaleCrop, RandomGaussianBlur, ToTensor, Normalize, FixedScaleCrop
+
+import data_preprocessing.pascal_voc_augmented.transforms as custom_transforms
+
+logging.basicConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
-def _data_transforms_pascal_voc() -> Tuple[Callable, Callable]:
+def _data_transforms_pascal_voc(image_size):
     PASCAL_VOC_MEAN = (0.485, 0.456, 0.406)
     PASCAL_VOC_STD = (0.229, 0.224, 0.225)
 
     train_transform = transforms.Compose([
-        RandomMirror(),
-        RandomScaleCrop(513, 513),
-        RandomGaussianBlur(),
-        ToTensor(),
-        Normalize([.485, .456, .406], [.229, .224, .225]),
+        custom_transforms.RandomMirror(),
+        custom_transforms.RandomScaleCrop(image_size, image_size),
+        custom_transforms.RandomGaussianBlur(),
+        custom_transforms.ToTensor(),
+        custom_transforms.Normalize(mean=PASCAL_VOC_MEAN, std=PASCAL_VOC_STD),
     ])
 
     val_transform = transforms.Compose([
-        FixedScaleCrop(513),
-        ToTensor(),
-        Normalize(mean=PASCAL_VOC_MEAN, std=PASCAL_VOC_STD),
+        custom_transforms.FixedScaleCrop(image_size),
+        custom_transforms.ToTensor(),
+        custom_transforms.Normalize(mean=PASCAL_VOC_MEAN, std=PASCAL_VOC_STD),
     ])
 
     return train_transform, val_transform
 
 
 # for centralized training
-def get_dataloader(_, data_dir: str, train_bs: int, test_bs: int, data_idxs: Optional[List[int]] = None) -> Iterable[Union[data.DataLoader, int]]:
-    return get_dataloader_pascal_voc(data_dir, train_bs, test_bs, data_idxs)
+def get_dataloader(_, data_dir, train_bs, test_bs, image_size, data_idxs=None):
+    return get_dataloader_pascal_voc(data_dir, train_bs, test_bs, image_size, data_idxs)
 
 
 # for local devices
-def get_dataloader_test(data_dir: str, train_bs: int, test_bs: int, data_idxs_train: Optional[List[int]], data_idxs_test: Optional[List[int]]) -> Iterable[Union[data.DataLoader, int]]:
-    return get_dataloader_pascal_voc_test(data_dir, train_bs, test_bs, data_idxs_train, data_idxs_test)
+def get_dataloader_test(data_dir, train_bs, test_bs, image_size, data_idxs_train=None, data_idxs_test=None):
+    return get_dataloader_pascal_voc_test(data_dir, train_bs, test_bs, image_size, data_idxs_train, data_idxs_test)
 
 
-def get_dataloader_pascal_voc(data_dir: str, train_bs: int, test_bs: int, data_idxs: Optional[List[int]] = None) -> Iterable[Union[data.DataLoader, int]]:
-    transform_train, transform_test = _data_transforms_pascal_voc()
+def get_dataloader_pascal_voc(data_dir, train_bs, test_bs, image_size, data_idxs=None):
+    transform_train, transform_test = _data_transforms_pascal_voc(image_size)
 
     train_ds = PascalVocAugmentedSegmentation(data_dir,
                                               split='train',
@@ -61,8 +66,8 @@ def get_dataloader_pascal_voc(data_dir: str, train_bs: int, test_bs: int, data_i
     return train_dl, test_dl, len(train_ds.classes)
 
 
-def get_dataloader_pascal_voc_test(data_dir: str, train_bs: int, test_bs: int, data_idxs_train: Optional[List[int]] = None, data_idxs_test: Optional[List[int]] = None) -> Iterable[Union[data.DataLoader, int]]:
-    transform_train, transform_test = _data_transforms_pascal_voc()
+def get_dataloader_pascal_voc_test(data_dir, train_bs, test_bs, image_size, data_idxs_train=None, data_idxs_test=None):
+    transform_train, transform_test = _data_transforms_pascal_voc(image_size)
 
     train_ds = PascalVocAugmentedSegmentation(data_dir,
                                               split='train',
@@ -82,8 +87,8 @@ def get_dataloader_pascal_voc_test(data_dir: str, train_bs: int, test_bs: int, d
     return train_dl, test_dl, len(train_ds.classes)
 
 
-def load_pascal_voc_data(data_dir: str) -> Iterable[Union[List[int], np.ndarray, Sized[str]]]:
-    transform_train, transform_test = _data_transforms_pascal_voc()
+def load_pascal_voc_data(data_dir, image_size):
+    transform_train, transform_test = _data_transforms_pascal_voc(image_size)
 
     train_ds = PascalVocAugmentedSegmentation(data_dir, split='train', download_dataset=False,
                                               transform=transform_train)
@@ -93,10 +98,10 @@ def load_pascal_voc_data(data_dir: str) -> Iterable[Union[List[int], np.ndarray,
 
 
 # Get a partition map for each client
-def partition_data(data_dir: str, partition: Literal['homo', 'hetero'], n_nets: int, alpha: float):
+def partition_data(data_dir, partition, n_nets, alpha, image_size):
     logging.info("********************* Partitioning data **********************")
     net_data_idx_map = None
-    train_images, train_targets, train_categories, _, __, ___ = load_pascal_voc_data(data_dir)
+    train_images, train_targets, train_categories, _, __, ___ = load_pascal_voc_data(data_dir, image_size)
     n_train = len(train_images)  # Number of training samples
 
     if partition == "homo":
@@ -118,18 +123,18 @@ def partition_data(data_dir: str, partition: Literal['homo', 'hetero'], n_nets: 
     return net_data_idx_map, train_data_cls_counts
 
 
-def load_partition_data_distributed_pascal_voc(process_id: int, dataset: PascalVocAugmentedSegmentation, data_dir: str, partition_method: Literal['homo', 'hetero'], partition_alpha: float,
-                                               client_number: int, batch_size: int):
+def load_partition_data_distributed_pascal_voc(process_id, dataset, data_dir, partition_method, partition_alpha, client_number, batch_size, image_size):
     net_data_idx_map, train_data_cls_counts = partition_data(data_dir,
                                                              partition_method,
                                                              client_number,
-                                                             partition_alpha)
+                                                             partition_alpha,
+                                                             image_size)
 
     train_data_num = sum([len(net_data_idx_map[r]) for r in range(client_number)])
 
     # get global test data
     if process_id == 0:
-        train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+        train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size)
         logging.info("Number of global train batches: {} and test batches: {}".format(len(train_data_global),len(test_data_global)))
         
         train_data_local_dict = None
@@ -143,7 +148,7 @@ def load_partition_data_distributed_pascal_voc(process_id: int, dataset: PascalV
         local_data_num = len(data_idxs)
         logging.info("Total number of local images: {} in client ID {}".format(local_data_num, process_id))
         # training batch size = 64; algorithms batch size = 32
-        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
+        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size,
                                                                       data_idxs)
         logging.info("Number of local train batches: {} and test batches: {} in client ID {}".format(len(train_data_local),len(test_data_local),process_id))
 
@@ -157,16 +162,17 @@ def load_partition_data_distributed_pascal_voc(process_id: int, dataset: PascalV
 
 
 # Called from main_fedseg
-def load_partition_data_pascal_voc(dataset: PascalVocAugmentedSegmentation, data_dir: str, partition_method: Literal['homo', 'hetero'], partition_alpha: float, client_number: int, batch_size: int):
+def load_partition_data_pascal_voc(dataset, data_dir, partition_method, partition_alpha, client_number, batch_size, image_size):
     net_data_idx_map, train_data_cls_counts = partition_data(data_dir,
                                                              partition_method,
                                                              client_number,
-                                                             partition_alpha)
+                                                             partition_alpha,
+                                                             image_size)
 
     train_data_num = sum([len(net_data_idx_map[r]) for r in range(client_number)])
 
     # Global train and test data
-    train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size)
+    train_data_global, test_data_global, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size)
     logging.info("Number of global train batches: {} and test batches: {}".format(len(train_data_global),len(test_data_global)))
 
     test_data_num = len(test_data_global)
@@ -184,7 +190,7 @@ def load_partition_data_pascal_voc(dataset: PascalVocAugmentedSegmentation, data
         data_local_num_dict[client_idx] = local_data_num
 
         # training batch size = 64; algorithms batch size = 32
-        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size,
+        train_data_local, test_data_local, class_num = get_dataloader(dataset, data_dir, batch_size, batch_size, image_size,
                                                                       data_idxs)
         logging.info("Number of local train batches: {} and test batches: {} in client ID {}".format(len(train_data_local),len(test_data_local),client_idx))
 

@@ -8,31 +8,18 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 from pathlib import Path, PurePath
-from typing import Literal, Callable, Optional, List, TypedDict, Sized
 
 from .utils import _download_file, _extract_file
 
 
-class Datapoint(TypedDict):
-    image: torch.FloatTensor
-    mask: torch.IntTensor
-
-
 class PascalVocAugmentedSegmentation(Dataset):
-    images_dir: PurePath
-    masks_dir: PurePath
-    split_file: PurePath
-    transform: Callable
-    images: List[str]
-    masks: List[str]
-    targets: np.ndarray
 
     def __init__(self,
-                 root_dir: str = '../../../data/pascal_voc_augmented',
-                 split: Literal['train', 'test', 'val'] = 'train',
-                 download_dataset: bool = False,
-                 transform: Optional[Callable] = None,
-                 data_idxs: Optional[List[int]] = None) -> None:
+                 root_dir='../../data/pascal_voc_augmented',
+                 split='train',
+                 download_dataset=False,
+                 transform=None,
+                 data_idxs=None):
         """
         The dataset class for Pascal VOC Augmented Dataset.
 
@@ -62,7 +49,7 @@ class PascalVocAugmentedSegmentation(Dataset):
 
         self.__generate_targets()
 
-    def __download_dataset(self) -> None:
+    def __download_dataset(self):
         """
         Downloads the PASCAL VOC Augmented dataset.
         """
@@ -81,7 +68,7 @@ class PascalVocAugmentedSegmentation(Dataset):
         shutil.move('{}/benchmark_RELEASE/dataset'.format(self.root_dir), self.root_dir)
         shutil.rmtree('{}/benchmark_RELEASE'.format(self.root_dir))
 
-    def __preprocess(self) -> None:
+    def __preprocess(self):
         """
         Pre-process the dataset to get mask and file paths of the images.
 
@@ -98,7 +85,7 @@ class PascalVocAugmentedSegmentation(Dataset):
                 self.masks.append(mask_path)
             assert len(self.images) == len(self.masks)
 
-    def __generate_targets(self) -> None:
+    def __generate_targets(self):
         """
         Used to generate targets which in turn is used to partition data in an non-IID setting.
         """
@@ -113,22 +100,22 @@ class PascalVocAugmentedSegmentation(Dataset):
             targets.append(categories)
         self.targets = np.asarray(targets)
 
-    def __getitem__(self, index: int) -> Datapoint:
+    def __getitem__(self, index):
         img = Image.open(self.images[index]).convert('RGB')
         mat = sio.loadmat(self.masks[index], mat_dtype=True, squeeze_me=True, struct_as_record=False)
         mask = mat['GTcls'].Segmentation
         mask = Image.fromarray(mask)
         sample = {'image': img, 'label': mask}
-
+ 
         if self.transform is not None:
             sample = self.transform(sample)
         return sample
 
-    def __len__(self) -> int:
+    def __len__(self):
         return len(self.images)
 
     @property
-    def classes(self) -> Sized[str]:
+    def classes(self):
         """
         Returns:
             The clasess present in the Pascal VOC Augmented dataset.
