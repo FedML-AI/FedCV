@@ -1,3 +1,5 @@
+### Note: An upgraded version is maintained at FedML repo: https://github.com/FedML-AI/FedML/tree/master/python/app/fedcv
+
 # FedCV: A Federated Learning Framework for Diverse Computer Vision Tasks
 
 ## Image Classification
