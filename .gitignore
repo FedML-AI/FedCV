@@ -1,11 +1,5 @@
-.DS_Store
-.idea
-.idea/*
-.vscode/*
-
-*.pyc
-
-wandb
-
 *.zip
-*.log
+__MACOSX/
+__pycache__/
+*.tmp
+mpi_host_file

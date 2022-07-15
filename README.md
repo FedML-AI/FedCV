@@ -1,76 +1,118 @@
-### Note: An upgraded version is maintained at FedML repo: https://github.com/FedML-AI/FedML/tree/master/python/app/fedcv
-
 # FedCV: A Federated Learning Framework for Diverse Computer Vision Tasks
 
-## Image Classification
-Dataset: Google Landmark, COCO, ImageNet
+## Introduction
 
-Model: EfficientNetB0, MobileNetV3
+![](fedcv_arch.jpg)
 
-## Object Detection
-Dataset: COCO
+Federated Learning (FL) is a distributed learning paradigm that can learn a global or personalized model from decentralized datasets on edge devices. However, in the computer vision domain, model performance in FL is far behind centralized training due to the lack of exploration in diverse tasks with a unified FL framework. FL has rarely been demonstrated effectively in advanced computer vision tasks such as object detection and image segmentation. To bridge the gap and facilitate the development of FL for computer vision tasks, in this work, we propose a federated learning library and benchmarking framework, named FedCV, to evaluate FL on the three most representative computer vision tasks: image classification, image segmentation, and object detection. We provide non-I.I.D. benchmarking datasets, models, and various reference FL algorithms. Our benchmark study suggests that there are multiple challenges that deserve future exploration: centralized training tricks may not be directly applied to FL; the non-I.I.D. dataset actually downgrades the model accuracy to some degree in different tasks; improving the system efficiency of federated training is challenging given the huge number of parameters and the per-client memory cost. We believe that such a library and benchmark, along with comparable evaluation settings, is necessary to make meaningful progress in FL on computer vision tasks.
 
-Model: YoLoV5
+## Prerequisites & Installation
 
-Google Doc: https://docs.google.com/document/d/1AU-3XT5vLKjLjvOOcdfPfTDwnww1C3xEaroA94pKaWU/edit#heading=h.xldeyzrvdr99
-
-## Image Segmentation
-Dataset: COCO (Pretraining), Pascal (Fine-Tuning)
-
-Model: DeepLabV3+, U-Net
-
-https://docs.google.com/document/d/1TJi3os3oRQlm6rIwoYfHjUA80M_9IQZ0_iRApuRs4s8/edit
-
-
-# Installation
-http://doc.fedml.ai/#/installation
-
-After the clone of this repository, please run the following command to get `FedML` submodule to your local.
-```
-mkdir FedML
-cd FedML
-git submodule init
-git submodule update
+```bash
+pip install fedml --upgrade
 ```
 
+There are other dependencies in some tasks that need to be installed.
 
+```bash
+cd python/app/fedcv/[task_folder]
+pip install -r requirements.txt
+```
 
-# Code Structure of FedCV
-<!-- Note: The code of FedCV only uses `FedML/fedml_core` and `FedML/fedml_api`.
-In near future, once FedML is stable, we will release it as a python package. 
-At that time, we can install FedML package with pip or conda, without the need to use Git submodule. -->
+## FedCV Experiments
 
-- `FedML`: a soft repository link generated using `git submodule add https://github.com/FedML-AI/FedML`.
+1. [Image Classification](#image-classification)
 
+   Model:
 
-- `data`: provide data downloading scripts and store the downloaded datasets.
-Note that in `FedML/data`, there also exists datasets for research, but these datasets are used for evaluating federated optimizers (e.g., FedAvg) and platforms.
-FedNLP supports more advanced datasets and models.
+   - CNN
+   - DenseNet
+   - MobileNetv3
+   - EfficientNet
 
-- `data_preprocessing`: data loaders
+   Dataset:
 
+   - CIFAR-10
+   - CIFAR-100
+   - CINIC-10
+   - FedCIFAR-100
+   - FederatedEMNIST
+   - ImageNet
+   - Landmark
+   - MNIST
+
+2. [Image Segmentation](#image-segmentation)
+
+   Model:
+
+   - UNet
+   - DeeplabV3
+   - TransUnet
+
+   Dataset:
+
+   - Cityscapes
+   - COCO
+   - PascalVOC
+
+3. [Object Detection](#object-detection)
+
+   Model:
+
+   - YOLOv5
+
+   Dataset:
+
+   - COCO
+   - COCO128
+
+## How to Add Your Own Model?
+
+Our framework supports `PyTorch` based models. To add your own specific model,
+
+1. Create a `PyTorch` model and place it under `model` folder.
+2. Prepare a `trainer module` by inheriting the base class `ClientTrainer`.
+3. Prepare an experiment file similar to `torch_*.py` and shell script similar to `run_*.sh`.
+4. Adjust the `fedml_config.yaml` file with the model-specific parameters.
+
+## How to Add More Datasets, Domain-Specific Splits & Non-I.I.D.ness Generation Mechanisms?
+
+Create new folder for your dataset under `data/` folder and provide utilities to before feeding the data to federated pre-processing utilities listed in `data/data_loader.py` based on your new dataset.
+
+Splits and Non-I.I.D.'ness methods specific to each task are also located under `data/data_loader.py`. By default, we provide I.I.D. and non-I.I.D. sampling, Dirichlet distribution sampling based on sample size of the dataset. To create custom splitting method based on the sample size, you can create a new function or modify `load_partition_data_*` function.
+
+## Code Structure of FedCV
+
+- `config`: Experiment and GPU mapping configurations.
+
+- `data`: Provide data downloading scripts and store the downloaded datasets. FedCV supports more advanced datasets and models for federated training of computer vision tasks.
 - `model`: advanced CV models.
+- `trainer`: please define your own trainer.py by inheriting the base class in `fedml.core.alg_frame.client_trainer.ClientTrainer `. Some tasks can share the same trainer.
+- `utils`: utility functions.
 
-- `trainer`: please define your own `trainer.py` by inheriting the base class in `FedML/fedml-core/trainer/fedavg_trainer.py`.
-Some tasks can share the same trainer.
+You can see the `README.md` file in each folder for more details.
 
-- `experiments/distributed`: 
-1. `experiments` is the entry point for training. It contains experiments in different platforms. We start from `distributed`.
-1. Every experiment integrates FOUR building blocks `FedML` (federated optimizers), `data_preprocessing`, `model`, `trainer`.
-3. To develop new experiments, please refer the code at `experiments/distributed/text-classification`.
+## Citation
 
-- `experiments/centralized`: 
-1. please provide centralized training script in this directory. 
-2. This is used to get the reference model accuracy for FL. 
-3. You may need to accelerate your training through distributed training on multi-GPUs and multi-machines. Please refer the code at `experiments/centralized/DDP_demo`.
+Please cite our FedML and FedCV papers if it helps your research.
 
-
-# Update FedML Submodule
+```text
+@article{he2021fedcv,
+  title={Fedcv: a federated learning framework for diverse computer vision tasks},
+  author={He, Chaoyang and Shah, Alay Dilipbhai and Tang, Zhenheng and Sivashunmugam, Di Fan1Adarshan Naiynar and Bhogaraju, Keerti and Shimpi, Mita and Shen, Li and Chu, Xiaowen and Soltanolkotabi, Mahdi and Avestimehr, Salman},
+  journal={arXiv preprint arXiv:2111.11066},
+  year={2021}
+}
+@misc{he2020fedml,
+      title={FedML: A Research Library and Benchmark for Federated Machine Learning},
+      author={Chaoyang He and Songze Li and Jinhyun So and Xiao Zeng and Mi Zhang and Hongyi Wang and Xiaoyang Wang and Praneeth Vepakomma and Abhishek Singh and Hang Qiu and Xinghua Zhu and Jianzong Wang and Li Shen and Peilin Zhao and Yan Kang and Yang Liu and Ramesh Raskar and Qiang Yang and Murali Annavaram and Salman Avestimehr},
+      year={2020},
+      eprint={2007.13518},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
 ```
-cd FedML
-git checkout master && git pull
-cd ..
-git add FedML
-git commit -m "#<issue_id> - updating submodule FedML to latest"
-git push
-```
+
+## Contact
+
+Please find contact information at the homepage.
