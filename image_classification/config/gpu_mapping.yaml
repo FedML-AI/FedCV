@@ -9,7 +9,7 @@
 
 # this is used for 10 clients and 1 server training within a single machine which has 4 GPUs
 mapping_default:
-    ChaoyangHe-GPU-RTX2080Tix4: [3, 3, 3, 2]
+    lambda-server1: [0, 0, 1, 2, 2, 2, 2, 2]
 
 # this is used for 4 clients and 1 server training within a single machine which has 4 GPUs
 mapping_config1_5:

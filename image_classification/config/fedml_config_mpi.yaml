@@ -3,13 +3,13 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "MNIST"
+  dataset: "fed_cifar100"
   data_cache_dir: "./data/"
   partition_method: "hetero"
   partition_alpha: 0.5
 
 model_args:
-  model: "cnn"
+  model: "efficientnet"
   image_size:
   input_size: 1
   class_num: 10
@@ -17,8 +17,8 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 2
-  client_num_per_round: 2
+  client_num_in_total: 10
+  client_num_per_round: 10
   comm_round: 10
   epochs: 5
   batch_size: 64
@@ -30,8 +30,8 @@ validation_args:
   frequency_of_the_test: 1
 
 device_args:
-  worker_num: 4
-  using_gpu: false
+  worker_num: 10
+  using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_default
 
